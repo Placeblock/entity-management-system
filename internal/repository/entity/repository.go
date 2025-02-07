@@ -7,7 +7,7 @@ import (
 )
 
 type EntityRepository interface {
-	GetEntity(ctx context.Context, id int64) (*models.Entity, error)
+	GetEntity(ctx context.Context, id uint) (*models.Entity, error)
 	CreateEntity(ctx context.Context, entity *models.Entity) error
 	UpdateEntity(ctx context.Context, entity models.Entity) error
 	GetEntities(ctx context.Context) (*[]models.Entity, error)

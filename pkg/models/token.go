@@ -3,7 +3,7 @@ package models
 import "time"
 
 type Token struct {
-	EntityID  int64
-	Pin       string
+	EntityID  uint   `gorm:"primaryKey"`
+	Pin       string `gorm:"unique"`
 	CreatedAt time.Time
 }

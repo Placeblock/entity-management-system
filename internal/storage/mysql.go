@@ -1,35 +1,24 @@
 package storage
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/codelix/ems/pkg/models"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
-var DB *sql.DB
-
-func Connect() {
-	// Capture connection properties.
-	cfg := mysql.Config{
-		User:   os.Getenv("DBUSER"),
-		Passwd: os.Getenv("DBPASS"),
-		Net:    "tcp",
-		Addr:   "127.0.0.1:3306",
-		DBName: "nostalgicraft",
-	}
-	// Get a database handle.
-	var err error
-	DB, err = sql.Open("mysql", cfg.FormatDSN())
+func Connect() *gorm.DB {
+	user := "nostalgicraft"
+	password := "GVIdC4CDvg49GD8h"
+	fmt.Println(user, password)
+	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:3306)/nostalgicraft?charset=utf8mb4&parseTime=True", user, password)
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	pingErr := DB.Ping()
-	if pingErr != nil {
-		log.Fatal(pingErr)
-	}
 	fmt.Println("Connected to Database!")
+	db.AutoMigrate(&models.Entity{}, &models.Token{})
+	return db
 }

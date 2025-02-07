@@ -21,7 +21,7 @@ type createEntityParams struct {
 }
 
 type createTokenParams struct {
-	EntityId int64 `json:"entityId" binding:"required"`
+	EntityId uint `json:"entityId" binding:"required"`
 }
 
 type HttpServer struct {
@@ -40,12 +40,12 @@ func (server *HttpServer) Serve() {
 	// GET ENTITY
 	entitiesGroup.GET(":id", func(ctx *gin.Context) {
 		serializedId := ctx.Param("id")
-		id, err := strconv.ParseInt(serializedId, 10, 64)
+		id, err := strconv.ParseUint(serializedId, 10, 0)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, "Invalid id")
 			return
 		}
-		entity, err := server.entityService.GetEntity(ctx.Request.Context(), id)
+		entity, err := server.entityService.GetEntity(ctx.Request.Context(), uint(id))
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
 			return
@@ -56,7 +56,7 @@ func (server *HttpServer) Serve() {
 	// UPDATE ENTITY
 	entitiesGroup.PUT(":id", func(ctx *gin.Context) {
 		serializedId := ctx.Param("id")
-		id, err := strconv.ParseInt(serializedId, 10, 64)
+		id, err := strconv.ParseUint(serializedId, 10, 0)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, "Invalid id")
 			return
@@ -68,7 +68,7 @@ func (server *HttpServer) Serve() {
 			return
 		}
 		context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		err = server.entityService.RenameEntity(context, id, params.NewName)
+		err = server.entityService.RenameEntity(context, uint(id), params.NewName)
 		cancel()
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
@@ -137,5 +137,5 @@ func (server *HttpServer) Serve() {
 		ctx.JSON(http.StatusOK, token)
 	})
 
-	r.Run()
+	r.Run("localhost:3006")
 }

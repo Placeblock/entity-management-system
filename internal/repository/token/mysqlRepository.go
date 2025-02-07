@@ -2,40 +2,42 @@ package token
 
 import (
 	"context"
-	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/codelix/ems/internal/storage"
 	"github.com/codelix/ems/pkg/models"
+	"gorm.io/gorm"
 )
 
 type MysqlTokenRepository struct {
+	Db *gorm.DB
+}
+
+func NewMysqlTokenRepository(db *gorm.DB) *MysqlTokenRepository {
+	return &MysqlTokenRepository{db}
 }
 
 func (repo *MysqlTokenRepository) CreateToken(ctx context.Context, token models.Token) error {
-	_, err := repo.GetToken(ctx, token.Pin)
-	if err == nil {
-		return fmt.Errorf("createToken: Could not create token")
+	if err := repo.Db.Delete(models.Token{EntityID: token.EntityID}).Error; err != nil {
+		return fmt.Errorf("createToken %d: %v", token.EntityID, err.Error())
 	}
-	_, err = storage.DB.Exec("INSERT INTO tokens (entityId, pin, createdAt) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE pin = ?, createdAt = ?;",
-		token.EntityID, token.Pin, token.CreatedAt, token.Pin, token.CreatedAt)
-	if err != nil {
-		return fmt.Errorf("createToken %d: %v", token.EntityID, err)
+	if err := repo.Db.Create(token).Error; err != nil {
+		return fmt.Errorf("createToken %d: %v", token.EntityID, err.Error())
 	}
 	return nil
 }
 
 func (repo *MysqlTokenRepository) GetToken(ctx context.Context, pin string) (*models.Token, error) {
-	token := models.Token{Pin: pin}
-	if err := storage.DB.QueryRow("SELECT entityId, createdAt FROM tokens WHERE pin = ?;", pin).Scan(&token.EntityID, &token.CreatedAt); err != nil {
-		if err == sql.ErrNoRows {
+	var token models.Token
+	if err := repo.Db.Where("pin = ?", pin).First(&token).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("getToken %s: %v", pin, err)
+		return nil, fmt.Errorf("getToken %s: %v", pin, err.Error())
 	}
 	if token.CreatedAt.Before(time.Now().Add(-time.Duration(2) * time.Minute)) {
-		storage.DB.Exec("DELETE FROM tokens WHERE entityId = ?", token.EntityID)
+		repo.Db.Delete(token)
 		return nil, nil
 	}
 	return &token, nil

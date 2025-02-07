@@ -17,7 +17,7 @@ func NewTokenService(repo token.TokenRepository) *TokenService {
 	return &TokenService{repo}
 }
 
-func (service *TokenService) CreateToken(ctx context.Context, entityId int64) (*models.Token, error) {
+func (service *TokenService) CreateToken(ctx context.Context, entityId uint) (*models.Token, error) {
 	pin := tools.GenSix()
 	token := models.Token{EntityID: entityId, CreatedAt: time.Now(), Pin: pin}
 	err := service.tokenRepository.CreateToken(ctx, token)
