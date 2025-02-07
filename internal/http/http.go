@@ -109,7 +109,17 @@ func (server *HttpServer) Serve() {
 	tokenGroup := r.Group("token")
 
 	tokenGroup.GET("", func(ctx *gin.Context) {
-
+		pin := ctx.Query("pin")
+		if pin == "" {
+			ctx.JSON(http.StatusBadRequest, "Invalid Pin")
+			return
+		}
+		token, err := server.tokenService.GetToken(ctx.Request.Context(), pin)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+		ctx.JSON(http.StatusOK, token)
 	})
 
 	tokenGroup.POST("", func(ctx *gin.Context) {

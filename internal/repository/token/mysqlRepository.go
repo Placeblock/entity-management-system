@@ -30,13 +30,13 @@ func (repo *MysqlTokenRepository) GetToken(ctx context.Context, pin string) (*mo
 	token := models.Token{Pin: pin}
 	if err := storage.DB.QueryRow("SELECT entityId, createdAt FROM tokens WHERE pin = ?;", pin).Scan(&token.EntityID, &token.CreatedAt); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("getToken %s: Invalid Pin", pin)
+			return nil, nil
 		}
 		return nil, fmt.Errorf("getToken %s: %v", pin, err)
 	}
 	if token.CreatedAt.Before(time.Now().Add(-time.Duration(2) * time.Minute)) {
 		storage.DB.Exec("DELETE FROM tokens WHERE entityId = ?", token.EntityID)
-		return nil, fmt.Errorf("getToken %s: Invalid Pin", pin)
+		return nil, nil
 	}
 	return &token, nil
 }
