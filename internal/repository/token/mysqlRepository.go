@@ -22,7 +22,7 @@ func (repo *MysqlTokenRepository) CreateToken(ctx context.Context, token models.
 	if err := repo.Db.Delete(models.Token{EntityID: token.EntityID}).Error; err != nil {
 		return fmt.Errorf("createToken %d: %v", token.EntityID, err.Error())
 	}
-	if err := repo.Db.Create(token).Error; err != nil {
+	if err := repo.Db.Create(&token).Error; err != nil {
 		return fmt.Errorf("createToken %d: %v", token.EntityID, err.Error())
 	}
 	return nil

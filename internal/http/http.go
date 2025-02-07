@@ -53,7 +53,7 @@ func (server *HttpServer) Serve() {
 		ctx.JSON(http.StatusOK, entity)
 	})
 
-	// UPDATE ENTITY
+	// RENAME
 	entitiesGroup.PUT(":id", func(ctx *gin.Context) {
 		serializedId := ctx.Param("id")
 		id, err := strconv.ParseUint(serializedId, 10, 0)

@@ -1,6 +1,6 @@
 package models
 
 type Entity struct {
-	ID   uint
-	Name string `gorm:"unique"`
+	ID   uint   `json:"id"`
+	Name string `gorm:"unique" json:"name"`
 }
