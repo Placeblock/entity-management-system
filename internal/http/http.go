@@ -35,6 +35,7 @@ func NewHttpServer(entityService entity.EntityService, tokenService token.TokenS
 
 func (server *HttpServer) Serve() {
 	r := gin.Default()
+	r.SetTrustedProxies(nil)
 	entitiesGroup := r.Group("entities")
 
 	// GET ENTITY

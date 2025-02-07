@@ -19,6 +19,7 @@ func main() {
 		log.Fatal("Could not create ZMQ Context")
 	}
 	publisher := realtime.NewPublisher(zctx)
+	go publisher.Listen()
 	storage.Connect()
 	db := storage.Connect()
 	entityRepo := entity.NewMysqlEntityRepository(db)

@@ -17,10 +17,14 @@ func NewPublisher(context *zmq.Context) *Publisher {
 	channel := make(chan interface{}, 1)
 	socket, err := context.NewSocket(zmq.PUB)
 	if err != nil {
-		log.Fatal("Could not create ZMQ Socket")
+		log.Fatal("Could not create ZMQ Socket: ", err)
 		return nil
 	}
-	socket.Bind("localhost:3008")
+	err = socket.Bind("tcp://127.0.0.1:3008")
+	if err != nil {
+		log.Fatal("Could not Bind ZMQ Socket: ", err)
+		return nil
+	}
 	fmt.Println("Created new ZMQ Publisher")
 	return &Publisher{channel, socket}
 }
@@ -28,6 +32,7 @@ func NewPublisher(context *zmq.Context) *Publisher {
 func (publisher *Publisher) Listen() {
 	for {
 		data := <-publisher.Channel
+		fmt.Printf("Sending Realtime Data: %+v\n", data)
 		b, err := json.Marshal(data)
 		if err != nil {
 			fmt.Printf("Could not send message %s\n", b)
