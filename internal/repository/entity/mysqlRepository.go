@@ -25,14 +25,14 @@ func (repo *MysqlEntityRepository) GetEntity(ctx context.Context, id uint) (*mod
 }
 
 func (repo *MysqlEntityRepository) CreateEntity(ctx context.Context, entity *models.Entity) error {
-	if err := repo.Db.Create(entity).Error; err != nil {
+	if err := repo.Db.WithContext(ctx).Create(entity).Error; err != nil {
 		return fmt.Errorf("createEntity %s: %v", entity.Name, err.Error())
 	}
 	return nil
 }
 
 func (repo *MysqlEntityRepository) UpdateEntity(ctx context.Context, entity models.Entity) error {
-	if err := repo.Db.Save(&entity).Error; err != nil {
+	if err := repo.Db.WithContext(ctx).Save(&entity).Error; err != nil {
 		return fmt.Errorf("updateEntity %s: %v", entity.Name, err.Error())
 	}
 	return nil
@@ -40,7 +40,7 @@ func (repo *MysqlEntityRepository) UpdateEntity(ctx context.Context, entity mode
 
 func (repo *MysqlEntityRepository) GetEntities(ctx context.Context) (*[]models.Entity, error) {
 	var entities []models.Entity
-	if err := repo.Db.Find(&entities).Error; err != nil {
+	if err := repo.Db.WithContext(ctx).Find(&entities).Error; err != nil {
 		return nil, fmt.Errorf("getEntities: %v", err.Error())
 	}
 	return &entities, nil
