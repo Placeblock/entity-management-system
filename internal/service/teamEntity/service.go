@@ -19,11 +19,21 @@ func NewTeamEntityService(repository teamentity.TeamEntityRepository, publisher 
 
 func (service *TeamEntityService) SetTeam(ctx context.Context, entityId uint, teamId uint) error {
 	teamEntity := models.TeamEntity{EntityID: entityId, TeamID: teamId}
-	return (*service.teamEntityRepository).CreateTeamEntity(ctx, &teamEntity)
+	err := (*service.teamEntityRepository).CreateTeamEntity(ctx, &teamEntity)
+	if err != nil {
+		return err
+	}
+	service.publisher.Channel <- realtime.Action{Type: "teamentity.create", Data: teamEntity}
+	return nil
 }
 
 func (service *TeamEntityService) LeaveTeam(ctx context.Context, entityId uint) error {
-	return (*service.teamEntityRepository).DeleteTeamEntity(ctx, entityId)
+	err := (*service.teamEntityRepository).DeleteTeamEntity(ctx, entityId)
+	if err != nil {
+		return err
+	}
+	service.publisher.Channel <- realtime.Action{Type: "teamentity.leave", Data: entityId}
+	return nil
 }
 
 func (service *TeamEntityService) GetTeamEntities(ctx context.Context) (*[]models.TeamEntity, error) {

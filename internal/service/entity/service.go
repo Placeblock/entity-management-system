@@ -28,7 +28,7 @@ func (service *EntityService) RenameEntity(ctx context.Context, id uint, newName
 	}
 	entity.Name = newName
 	(*service.entityRepository).UpdateEntity(ctx, *entity)
-	service.publisher.Channel <- realtime.Action{Type: "update", Data: entity}
+	service.publisher.Channel <- realtime.Action{Type: "entity.rename", Data: entity}
 	return nil
 }
 
