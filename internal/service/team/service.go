@@ -30,6 +30,6 @@ func (service *TeamService) RecolorTeam(ctx context.Context, id uint, newHue mod
 }
 
 func (service *TeamService) SetOwner(ctx context.Context, id uint, newOwner uint) error {
-	team := models.Team{ID: id, OwnerId: newOwner}
+	team := models.Team{ID: id, OwnerID: newOwner}
 	return (*service.teamRepository).UpdateTeam(ctx, team)
 }
