@@ -3,8 +3,10 @@ package rest
 import "fmt"
 
 type HTTPError struct {
-	Response
-	Cause error `json:"-"`
+	Title  string `json:"title"`
+	Detail string `json:"detail"`
+	Status int    `json:"-"`
+	Cause  error  `json:"-"`
 }
 
 func (e *HTTPError) Error() string {

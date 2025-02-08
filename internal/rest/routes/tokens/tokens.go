@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/codelix/ems/internal/service/token"
+	"github.com/codelix/ems/pkg/rest"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,27 +20,31 @@ func Handle(g *gin.RouterGroup, service *token.TokenService) {
 func getToken(ctx *gin.Context, tokenService *token.TokenService) {
 	pin := ctx.Query("pin")
 	if pin == "" {
-		ctx.JSON(http.StatusBadRequest, "Invalid Pin")
+		ctx.Error(&rest.HTTPError{Title: "Invalid Pin", Detail: "No or an invalid Pin was provided", Status: http.StatusBadRequest})
 		return
 	}
 	token, err := tokenService.GetToken(ctx.Request.Context(), pin)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, err.Error())
+		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while requesting the token", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
 	ctx.JSON(http.StatusOK, token)
+}
+
+type createTokenParams struct {
+	EntityId uint `json:"entityId" binding:"required"`
 }
 
 func createToken(ctx *gin.Context, tokenService *token.TokenService) {
 	var params createTokenParams
 	err := ctx.ShouldBindJSON(&params)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err.Error())
+		ctx.Error(&rest.HTTPError{Title: "Invalid Token Parameters", Detail: "No or invalid parameters where provided to create the token", Status: http.StatusBadRequest})
 		return
 	}
 	token, err := tokenService.CreateToken(ctx.Request.Context(), params.EntityId)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, err.Error())
+		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while creating the token", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
 	ctx.JSON(http.StatusOK, token)

@@ -37,3 +37,28 @@ func (service *TeamEntityService) GetTeamEntitiesByTeamId(ctx context.Context, t
 func (service *TeamEntityService) GetTeamEntity(ctx context.Context, entityId uint) (*models.TeamEntity, error) {
 	return (*service.teamEntityRepository).GetTeamEntityByEntityId(ctx, entityId)
 }
+
+func (service *TeamEntityService) CreateInvite(ctx context.Context, invitedId uint, inviterId uint, teamId uint) error {
+	teamEntityInvite := models.TeamEntityInvite{InvitedID: invitedId, InviterID: inviterId, TeamID: teamId}
+	return (*service.teamEntityRepository).CreateTeamEntityInvite(ctx, teamEntityInvite)
+}
+
+func (service *TeamEntityService) ProcessInvite(ctx context.Context, invitedId uint, teamId uint, accept bool) error {
+	teamEntityInvite, err := (*service.teamEntityRepository).GetTeamEntityInvite(ctx, invitedId, teamId)
+	if err != nil {
+		return err
+	}
+	if accept {
+		return (*service.teamEntityRepository).AcceptTeamEntityInvite(ctx, *teamEntityInvite)
+	} else {
+		return (*service.teamEntityRepository).DeclineTeamEntityInvite(ctx, *teamEntityInvite)
+	}
+}
+
+func (service *TeamEntityService) GetTeamEntityInvites(ctx context.Context) (*[]models.TeamEntityInvite, error) {
+	return (*service.teamEntityRepository).GetTeamEntityInvites(ctx)
+}
+
+func (service *TeamEntityService) GetTeamEntityInvitesByInvitedId(ctx context.Context, invitedId uint) (*[]models.TeamEntityInvite, error) {
+	return (*service.teamEntityRepository).GetTeamEntityInvitesByInvitedId(ctx, invitedId)
+}

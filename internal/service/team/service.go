@@ -15,6 +15,19 @@ func NewMysqlTeamRepository(repo *team.TeamRepository) *TeamService {
 	return &TeamService{repo}
 }
 
+func (service *TeamService) GetTeams(ctx context.Context) (*[]models.Team, error) {
+	return (*service.teamRepository).GetTeams(ctx)
+}
+
+func (service *TeamService) GetTeam(ctx context.Context, teamId uint) (*models.Team, error) {
+	var team models.Team
+	err := (*service.teamRepository).GetTeam(ctx, &team)
+	if err != nil {
+		return nil, err
+	}
+	return &team, nil
+}
+
 func (service *TeamService) CreateTeam(ctx context.Context, team *models.Team) error {
 	return (*service.teamRepository).CreateTeam(ctx, team)
 }
