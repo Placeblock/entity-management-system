@@ -32,7 +32,7 @@ func (repo *MysqlEntityRepository) CreateEntity(ctx context.Context, entity *mod
 }
 
 func (repo *MysqlEntityRepository) UpdateEntity(ctx context.Context, entity models.Entity) error {
-	if err := repo.db.WithContext(ctx).Save(&entity).Error; err != nil {
+	if err := repo.db.WithContext(ctx).Updates(&entity).Error; err != nil {
 		return fmt.Errorf("updateEntity %s: %v", entity.Name, err.Error())
 	}
 	return nil

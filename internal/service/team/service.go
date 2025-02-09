@@ -54,7 +54,7 @@ func (service *TeamService) RenameTeam(ctx context.Context, id uint, newName str
 }
 
 func (service *TeamService) RecolorTeam(ctx context.Context, id uint, newHue models.Hue) error {
-	team := models.Team{ID: id, Hue: newHue}
+	team := models.Team{ID: id, Hue: &newHue}
 	err := (*service.teamRepository).UpdateTeam(ctx, team)
 	if err != nil {
 		return err

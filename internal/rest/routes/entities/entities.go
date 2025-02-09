@@ -13,17 +13,23 @@ import (
 )
 
 func Handle(g *gin.RouterGroup, entityService *entity.EntityService) {
+	g.POST("", func(ctx *gin.Context) {
+		createEntity(ctx, entityService)
+	})
+	g.GET("", func(ctx *gin.Context) {
+		getEntities(ctx, entityService)
+	})
 	g.GET(":id", func(ctx *gin.Context) {
 		getEntity(ctx, entityService)
 	})
 	g.PUT(":id", func(ctx *gin.Context) {
 		renameEntity(ctx, entityService)
 	})
-	g.GET("", func(ctx *gin.Context) {
-		getEntities(ctx, entityService)
+	g.DELETE(":id/team", func(ctx *gin.Context) {
+		leaveTeam(ctx, entityService)
 	})
-	g.POST("", func(ctx *gin.Context) {
-		createEntity(ctx, entityService)
+	g.GET(":id/invites", func(ctx *gin.Context) {
+		getInvitesByInvited(ctx, entityService)
 	})
 }
 
@@ -39,7 +45,7 @@ func getEntity(ctx *gin.Context, entityService *entity.EntityService) {
 		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while requesting the Entity", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
-	ctx.JSON(http.StatusOK, entity)
+	ctx.JSON(http.StatusOK, rest.Response{Data: entity})
 }
 
 func getEntities(ctx *gin.Context, entityService *entity.EntityService) {
@@ -48,7 +54,7 @@ func getEntities(ctx *gin.Context, entityService *entity.EntityService) {
 		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while requesting the Entities", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
-	ctx.JSON(http.StatusOK, entities)
+	ctx.JSON(http.StatusOK, rest.Response{Data: entities})
 }
 
 type createEntityParams struct {
@@ -70,7 +76,7 @@ func createEntity(ctx *gin.Context, entityService *entity.EntityService) {
 		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while creating the Entity", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
-	ctx.JSON(http.StatusOK, entity)
+	ctx.JSON(http.StatusOK, rest.Response{Data: entity})
 }
 
 type updateEntityParams struct {
@@ -97,5 +103,5 @@ func renameEntity(ctx *gin.Context, entityService *entity.EntityService) {
 		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while renaming the Entity", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
-	ctx.JSON(http.StatusOK, nil)
+	ctx.JSON(http.StatusOK, rest.Response{Data: nil})
 }

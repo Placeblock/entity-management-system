@@ -44,7 +44,7 @@ func (repo *MysqlTeamRepository) DeleteTeam(ctx context.Context, id uint) error 
 }
 
 func (repo *MysqlTeamRepository) UpdateTeam(ctx context.Context, team models.Team) error {
-	if err := repo.db.WithContext(ctx).Save(&team).Error; err != nil {
+	if err := repo.db.WithContext(ctx).Updates(&team).Error; err != nil {
 		return fmt.Errorf("updateTeam %d: %v", team.ID, err)
 	}
 	return nil

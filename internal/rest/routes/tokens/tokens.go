@@ -28,7 +28,7 @@ func getToken(ctx *gin.Context, tokenService *token.TokenService) {
 		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while requesting the token", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
-	ctx.JSON(http.StatusOK, token)
+	ctx.JSON(http.StatusOK, rest.Response{Data: token})
 }
 
 type createTokenParams struct {
@@ -47,5 +47,5 @@ func createToken(ctx *gin.Context, tokenService *token.TokenService) {
 		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while creating the token", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
-	ctx.JSON(http.StatusOK, token)
+	ctx.JSON(http.StatusOK, rest.Response{Data: token})
 }
