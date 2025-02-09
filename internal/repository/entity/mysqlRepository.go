@@ -16,12 +16,11 @@ func NewMysqlEntityRepository(db *gorm.DB) *MysqlEntityRepository {
 	return &MysqlEntityRepository{db}
 }
 
-func (repo *MysqlEntityRepository) GetEntity(ctx context.Context, id uint) (*models.Entity, error) {
-	var entity models.Entity
-	if err := repo.db.WithContext(ctx).First(&entity, &id).Error; err != nil {
-		return nil, fmt.Errorf("getEntity %d: %s", id, err.Error())
+func (repo *MysqlEntityRepository) GetEntity(ctx context.Context, entity *models.Entity) error {
+	if err := repo.db.WithContext(ctx).First(entity).Error; err != nil {
+		return fmt.Errorf("getEntity %+v: %v", entity, err.Error())
 	}
-	return &entity, nil
+	return nil
 }
 
 func (repo *MysqlEntityRepository) CreateEntity(ctx context.Context, entity *models.Entity) error {
@@ -38,9 +37,9 @@ func (repo *MysqlEntityRepository) UpdateEntity(ctx context.Context, entity mode
 	return nil
 }
 
-func (repo *MysqlEntityRepository) GetEntities(ctx context.Context) (*[]models.Entity, error) {
+func (repo *MysqlEntityRepository) GetEntities(ctx context.Context, filter models.Entity) (*[]models.Entity, error) {
 	var entities []models.Entity
-	if err := repo.db.WithContext(ctx).Find(&entities).Error; err != nil {
+	if err := repo.db.WithContext(ctx).Where(filter).Find(&entities).Error; err != nil {
 		return nil, fmt.Errorf("getEntities: %v", err.Error())
 	}
 	return &entities, nil

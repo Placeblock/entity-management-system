@@ -7,8 +7,8 @@ import (
 )
 
 type EntityRepository interface {
-	GetEntity(ctx context.Context, id uint) (*models.Entity, error)
+	GetEntity(ctx context.Context, entity *models.Entity) error
 	CreateEntity(ctx context.Context, entity *models.Entity) error
 	UpdateEntity(ctx context.Context, entity models.Entity) error
-	GetEntities(ctx context.Context) (*[]models.Entity, error)
+	GetEntities(ctx context.Context, filter models.Entity) (*[]models.Entity, error)
 }

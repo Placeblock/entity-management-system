@@ -33,9 +33,14 @@ func (service *EntityService) RenameEntity(ctx context.Context, id uint, newName
 }
 
 func (service *EntityService) GetEntities(ctx context.Context) (*[]models.Entity, error) {
-	return (*service.entityRepository).GetEntities(ctx)
+	return (*service.entityRepository).GetEntities(ctx, models.Entity{})
 }
 
 func (service *EntityService) GetEntity(ctx context.Context, id uint) (*models.Entity, error) {
-	return (*service.entityRepository).GetEntity(ctx, id)
+	entity := models.Entity{ID: id}
+	err := (*service.entityRepository).GetEntity(ctx, &entity)
+	if err != nil {
+		return nil, err
+	}
+	return &entity, nil
 }

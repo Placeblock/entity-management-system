@@ -7,15 +7,13 @@ import (
 )
 
 type MemberRepository interface {
-	GetMembers(ctx context.Context) (*[]models.Member, error)
-	GetMembersByTeamId(ctx context.Context, teamId uint) (*[]models.Member, error)
+	GetMembers(ctx context.Context, filter models.Member) (*[]models.Member, error)
 	CreateMember(ctx context.Context, member *models.Member) error
-	DeleteMemberByEntityId(ctx context.Context, entityId uint) error
+	DeleteMember(ctx context.Context, member models.Member) error
 	GetMember(ctx context.Context, member *models.Member) error
 
-	GetMemberInvites(ctx context.Context) (*[]models.MemberInvite, error)
-	GetMemberInvite(ctx context.Context, inviteId uint) (*models.MemberInvite, error)
-	GetMemberInvitesByInvitedId(ctx context.Context, invitedId uint) (*[]models.MemberInvite, error)
+	GetMemberInvites(ctx context.Context, filter models.MemberInvite) (*[]models.MemberInvite, error)
+	GetMemberInvite(ctx context.Context, invite *models.MemberInvite) error
 	CreateMemberInvite(ctx context.Context, memberInvite *models.MemberInvite) error
 	DeclineMemberInvite(ctx context.Context, memberInvite models.MemberInvite) error
 	AcceptMemberInvite(ctx context.Context, memberInvite models.MemberInvite) error

@@ -28,17 +28,16 @@ func (repo *MysqlTokenRepository) CreateToken(ctx context.Context, token models.
 	return nil
 }
 
-func (repo *MysqlTokenRepository) GetToken(ctx context.Context, pin string) (*models.Token, error) {
-	var token models.Token
-	if err := repo.db.WithContext(ctx).Where("pin = ?", pin).First(&token).Error; err != nil {
+func (repo *MysqlTokenRepository) GetToken(ctx context.Context, token *models.Token) (*models.Token, error) {
+	if err := repo.db.WithContext(ctx).First(&token).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("getToken %s: %v", pin, err.Error())
+		return nil, fmt.Errorf("getToken %+v: %v", token, err.Error())
 	}
 	if token.CreatedAt.Before(time.Now().Add(-time.Duration(2) * time.Minute)) {
 		repo.db.WithContext(ctx).Delete(token)
 		return nil, nil
 	}
-	return &token, nil
+	return token, nil
 }
