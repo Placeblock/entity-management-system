@@ -40,7 +40,7 @@ func (service *TeamEntityService) GetTeamEntities(ctx context.Context) (*[]model
 	return (*service.teamEntityRepository).GetTeamEntities(ctx)
 }
 
-func (service *TeamEntityService) GetTeamEntitiesByTeamId(ctx context.Context, teamId uint) (*[]models.Entity, error) {
+func (service *TeamEntityService) GetTeamEntitiesByTeamId(ctx context.Context, teamId uint) (*[]models.TeamEntity, error) {
 	return (*service.teamEntityRepository).GetTeamEntitiesByTeamId(ctx, teamId)
 }
 

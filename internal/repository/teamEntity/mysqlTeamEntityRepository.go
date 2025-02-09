@@ -6,6 +6,7 @@ import (
 
 	"github.com/codelix/ems/pkg/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type MysqlTeamEntityRepository struct {
@@ -18,7 +19,7 @@ func NewMysqlTeamEntityRepository(db *gorm.DB) *MysqlTeamEntityRepository {
 
 func (repo *MysqlTeamEntityRepository) GetTeamEntities(ctx context.Context) (*[]models.TeamEntity, error) {
 	var teamEntities []models.TeamEntity
-	if err := repo.db.WithContext(ctx).Preload("Team").Preload("Entity").Find(&teamEntities).Error; err != nil {
+	if err := repo.db.WithContext(ctx).Preload(clause.Associations).Find(&teamEntities).Error; err != nil {
 		return nil, fmt.Errorf("getTeamEntities: %v", err.Error())
 	}
 	return &teamEntities, nil
@@ -26,7 +27,7 @@ func (repo *MysqlTeamEntityRepository) GetTeamEntities(ctx context.Context) (*[]
 
 func (repo *MysqlTeamEntityRepository) GetTeamEntitiesByTeamId(ctx context.Context, teamId uint) (*[]models.TeamEntity, error) {
 	var teamEntities []models.TeamEntity
-	if err := repo.db.WithContext(ctx).Preload("Team").Preload("Entity").Find(&teamEntities).Error; err != nil {
+	if err := repo.db.WithContext(ctx).Preload(clause.Associations).Find(&teamEntities).Error; err != nil {
 		return nil, fmt.Errorf("getTeamEntities: %v", err.Error())
 	}
 	return &teamEntities, nil
@@ -56,7 +57,7 @@ func (repo *MysqlTeamEntityRepository) DeleteTeamEntity(ctx context.Context, ent
 
 func (repo *MysqlTeamEntityRepository) GetTeamEntityInvites(ctx context.Context) (*[]models.TeamEntityInvite, error) {
 	var teamEntityInvites []models.TeamEntityInvite
-	if err := repo.db.WithContext(ctx).Preload("Team").Preload("Invited").Preload("Inviter").Find(&teamEntityInvites).Error; err != nil {
+	if err := repo.db.WithContext(ctx).Preload(clause.Associations).Find(&teamEntityInvites).Error; err != nil {
 		return nil, fmt.Errorf("getTeamEntityInvites: %v", err.Error())
 	}
 	return &teamEntityInvites, nil

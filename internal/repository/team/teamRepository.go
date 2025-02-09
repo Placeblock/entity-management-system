@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/codelix/ems/pkg/models"
-	"github.com/google/uuid"
 )
 
 type TeamRepository interface {
@@ -12,6 +11,6 @@ type TeamRepository interface {
 	GetTeam(ctx context.Context, team *models.Team) error
 
 	CreateTeam(ctx context.Context, team *models.Team) error
-	DeleteTeam(ctx context.Context, id uuid.UUID) error
+	DeleteTeam(ctx context.Context, id uint) error
 	UpdateTeam(ctx context.Context, team models.Team) error
 }

@@ -19,6 +19,6 @@ func Connect() *gorm.DB {
 		log.Fatal(err)
 	}
 	fmt.Println("Connected to Database!")
-	db.AutoMigrate(&models.Entity{}, &models.Token{})
+	db.AutoMigrate(&models.Entity{}, &models.Token{}, &models.Team{}, &models.TeamEntity{}, &models.TeamEntityInvite{})
 	return db
 }

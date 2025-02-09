@@ -34,8 +34,9 @@ func Handle(g *gin.RouterGroup, teamService *team.TeamService) {
 }
 
 type createParams struct {
-	Name string     `json:"name" binding:"required"`
-	Hue  models.Hue `json:"hue" binding:"required"`
+	Name    string      `json:"name" binding:"required"`
+	Hue     *models.Hue `json:"hue" binding:"required"`
+	OwnerID uint        `json:"owner_id" binding:"required"`
 }
 
 func createTeam(ctx *gin.Context, teamService *team.TeamService) {
@@ -46,7 +47,7 @@ func createTeam(ctx *gin.Context, teamService *team.TeamService) {
 		return
 	}
 	context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	var team models.Team
+	team := models.Team{Name: params.Name, Hue: *params.Hue, OwnerID: params.OwnerID}
 	err = teamService.CreateTeam(context, &team)
 	cancel()
 	if err != nil {
@@ -84,7 +85,7 @@ func renameTeam(ctx *gin.Context, teamService *team.TeamService) {
 }
 
 type recolorParams struct {
-	Hue models.Hue `json:"hue" binding:"required"`
+	Hue *models.Hue `json:"hue" binding:"required"`
 }
 
 func recolorTeam(ctx *gin.Context, teamService *team.TeamService) {
@@ -101,7 +102,7 @@ func recolorTeam(ctx *gin.Context, teamService *team.TeamService) {
 		return
 	}
 	context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	err = teamService.RecolorTeam(context, uint(id), params.Hue)
+	err = teamService.RecolorTeam(context, uint(id), *params.Hue)
 	cancel()
 	if err != nil {
 		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while recoloring the team", Status: http.StatusInternalServerError, Cause: err})
