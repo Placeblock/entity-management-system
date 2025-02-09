@@ -23,9 +23,6 @@ func Handle(g *gin.RouterGroup, teamService *team.TeamService, memberService *me
 	g.GET(":id", func(ctx *gin.Context) {
 		getTeam(ctx, teamService)
 	})
-	g.PUT(":id/owner", func(ctx *gin.Context) {
-		setOwner(ctx, teamService)
-	})
 	g.PUT(":id/color", func(ctx *gin.Context) {
 		recolorTeam(ctx, teamService)
 	})
@@ -45,9 +42,9 @@ func Handle(g *gin.RouterGroup, teamService *team.TeamService, memberService *me
 }
 
 type createParams struct {
-	Name    string      `json:"name" binding:"required"`
-	Hue     *models.Hue `json:"hue" binding:"required"`
-	OwnerID uint        `json:"owner_id" binding:"required"`
+	Name     string      `json:"name" binding:"required"`
+	Hue      *models.Hue `json:"hue" binding:"required"`
+	EntityID uint        `json:"entity_id" binding:"required"`
 }
 
 func createTeam(ctx *gin.Context, teamService *team.TeamService) {
@@ -58,14 +55,14 @@ func createTeam(ctx *gin.Context, teamService *team.TeamService) {
 		return
 	}
 	context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	team := models.Team{Name: params.Name, Hue: params.Hue, OwnerID: params.OwnerID}
-	err = teamService.CreateTeam(context, &team)
+	team := models.Team{Name: params.Name, Hue: params.Hue}
+	member, err := teamService.CreateTeam(context, &team, params.EntityID)
 	cancel()
 	if err != nil {
 		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while creating the team", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
-	ctx.JSON(http.StatusOK, rest.Response{Data: team})
+	ctx.JSON(http.StatusOK, rest.Response{Data: rest.CreateTeamData{Team: team, Member: *member}})
 }
 
 type renameParams struct {
@@ -124,29 +121,6 @@ func recolorTeam(ctx *gin.Context, teamService *team.TeamService) {
 
 type setOwnerParams struct {
 	OwnerID uint `json:"owner_id" binding:"required"`
-}
-
-func setOwner(ctx *gin.Context, teamService *team.TeamService) {
-	serializedId := ctx.Param("id")
-	id, err := strconv.ParseUint(serializedId, 10, 0)
-	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Invalid ID", Detail: "An invalid Team ID was provided", Status: http.StatusBadRequest, Cause: err})
-		return
-	}
-	var params setOwnerParams
-	err = ctx.ShouldBindJSON(&params)
-	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Invalid Parameters", Detail: "No or invalid parameters where provided to change the owner of the team", Status: http.StatusBadRequest, Cause: err})
-		return
-	}
-	context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	err = teamService.SetOwner(context, uint(id), params.OwnerID)
-	cancel()
-	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while changing the owner of the team", Status: http.StatusInternalServerError, Cause: err})
-		return
-	}
-	ctx.JSON(http.StatusOK, rest.Response{Data: nil})
 }
 
 func getTeams(ctx *gin.Context, teamService *team.TeamService) {
@@ -223,10 +197,10 @@ func getInvites(ctx *gin.Context, memberService *member.MemberService) {
 		ctx.Error(&rest.HTTPError{Title: "Invalid ID", Detail: "An invalid Team ID was provided", Status: http.StatusBadRequest, Cause: err})
 		return
 	}
-	members, err := memberService.GetMembersByTeamId(ctx.Request.Context(), uint(id))
+	invites, err := memberService.GetMemberInvitesByTeamId(ctx.Request.Context(), uint(id))
 	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occured while requesting the Team Members", Status: http.StatusInternalServerError, Cause: err})
+		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occured while requesting the Team Invites", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
-	ctx.JSON(http.StatusOK, rest.Response{Data: members})
+	ctx.JSON(http.StatusOK, rest.Response{Data: invites})
 }

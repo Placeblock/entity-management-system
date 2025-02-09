@@ -22,12 +22,13 @@ func (service *EntityService) CreateEntity(ctx context.Context, entity *models.E
 }
 
 func (service *EntityService) RenameEntity(ctx context.Context, id uint, newName string) error {
-	entity, err := (*service.entityRepository).GetEntity(ctx, id)
+	entity := models.Entity{ID: id}
+	err := (*service.entityRepository).GetEntity(ctx, &entity)
 	if err != nil {
 		return err
 	}
 	entity.Name = newName
-	(*service.entityRepository).UpdateEntity(ctx, *entity)
+	(*service.entityRepository).UpdateEntity(ctx, entity)
 	service.publisher.Channel <- realtime.Action{Type: "entity.rename", Data: entity}
 	return nil
 }

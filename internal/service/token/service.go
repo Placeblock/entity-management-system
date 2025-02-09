@@ -28,5 +28,5 @@ func (service *TokenService) CreateToken(ctx context.Context, entityId uint) (*m
 }
 
 func (service *TokenService) GetToken(ctx context.Context, pin string) (*models.Token, error) {
-	return service.tokenRepository.GetToken(ctx, pin)
+	return service.tokenRepository.GetToken(ctx, &models.Token{Pin: pin})
 }

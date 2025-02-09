@@ -1,10 +1,13 @@
 package members
 
 import (
+	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/codelix/ems/internal/service/member"
+	"github.com/codelix/ems/pkg/models"
 	"github.com/codelix/ems/pkg/rest"
 	"github.com/gin-gonic/gin"
 )
@@ -52,10 +55,12 @@ func deleteMember(ctx *gin.Context, memberService *member.MemberService) {
 		ctx.Error(&rest.HTTPError{Title: "Invalid ID", Detail: "An invalid Member ID was provided", Status: http.StatusBadRequest, Cause: err})
 		return
 	}
-	members, err := memberService.LeaveTeam(ctx.Request.Context(), uint(id))
+	context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	err = memberService.RemoveMember(context, &models.Member{ID: uint(id)})
+	cancel()
 	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occured while requesting the Team Members", Status: http.StatusInternalServerError, Cause: err})
+		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occured while deleting the Team Member", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
-	ctx.JSON(http.StatusOK, rest.Response{Data: members})
+	ctx.JSON(http.StatusOK, rest.Response{Data: nil})
 }

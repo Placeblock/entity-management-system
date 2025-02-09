@@ -6,6 +6,7 @@ import (
 	"github.com/codelix/ems/internal/realtime"
 	"github.com/codelix/ems/internal/repository/team"
 	"github.com/codelix/ems/pkg/models"
+	rtm "github.com/codelix/ems/pkg/realtime"
 )
 
 type TeamService struct {
@@ -18,7 +19,7 @@ func NewMysqlTeamRepository(repo team.TeamRepository, publisher *realtime.Publis
 }
 
 func (service *TeamService) GetTeams(ctx context.Context) (*[]models.Team, error) {
-	return (*service.teamRepository).GetTeams(ctx)
+	return (*service.teamRepository).GetTeams(ctx, models.Team{})
 }
 
 func (service *TeamService) GetTeam(ctx context.Context, teamId uint) (*models.Team, error) {
@@ -30,13 +31,14 @@ func (service *TeamService) GetTeam(ctx context.Context, teamId uint) (*models.T
 	return &team, nil
 }
 
-func (service *TeamService) CreateTeam(ctx context.Context, team *models.Team) error {
-	err := (*service.teamRepository).CreateTeam(ctx, team)
+func (service *TeamService) CreateTeam(ctx context.Context, team *models.Team, entityId uint) (*models.Member, error) {
+	member := models.Member{EntityID: entityId}
+	err := (*service.teamRepository).CreateTeam(ctx, team, &member)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	service.publisher.Channel <- realtime.Action{Type: "team.create", Data: team}
-	return nil
+	service.publisher.Channel <- realtime.Action{Type: "team.create", Data: rtm.CreateTeamData{Team: *team, Member: member}}
+	return &member, nil
 }
 
 func (service *TeamService) RenameTeam(ctx context.Context, id uint, newName string) error {
@@ -64,19 +66,5 @@ func (service *TeamService) RecolorTeam(ctx context.Context, id uint, newHue mod
 		return err
 	}
 	service.publisher.Channel <- realtime.Action{Type: "team.recolor", Data: team}
-	return nil
-}
-
-func (service *TeamService) SetOwner(ctx context.Context, id uint, newOwner uint) error {
-	team := models.Team{ID: id, OwnerID: newOwner}
-	err := (*service.teamRepository).UpdateTeam(ctx, team)
-	if err != nil {
-		return err
-	}
-	err = (*service.teamRepository).GetTeam(ctx, &team)
-	if err != nil {
-		return err
-	}
-	service.publisher.Channel <- realtime.Action{Type: "team.owner", Data: team}
 	return nil
 }
