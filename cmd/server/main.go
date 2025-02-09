@@ -24,7 +24,6 @@ func main() {
 	}
 	publisher := realtime.NewPublisher(zctx)
 	go publisher.Listen()
-	storage.Connect()
 	db := storage.Connect()
 	entityRepo := entity.NewMysqlEntityRepository(db)
 	tokenRepo := token.NewMysqlTokenRepository(db)
