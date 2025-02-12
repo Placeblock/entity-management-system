@@ -35,7 +35,7 @@ func (server *HttpServer) Serve() {
 
 	entitiesGroup := r.Group("entities")
 	entities.Handle(entitiesGroup, &server.entityService, &server.memberService)
-	tokenGroup := r.Group("token")
+	tokenGroup := r.Group("tokens")
 	tokens.Handle(tokenGroup, &server.tokenService)
 	teamsGroup := r.Group("teams")
 	teams.Handle(teamsGroup, &server.teamService, &server.memberService)

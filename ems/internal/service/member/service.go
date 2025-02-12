@@ -19,12 +19,12 @@ func NewMemberService(repository teamentity.MemberRepository, publisher *realtim
 }
 
 func (service *MemberService) SetTeam(ctx context.Context, entityId uint, teamId uint) error {
-	teamEntity := models.Member{EntityID: entityId, TeamID: teamId}
-	err := (*service.memberRepository).CreateMember(ctx, &teamEntity)
+	member := models.Member{EntityID: entityId, TeamID: teamId}
+	err := (*service.memberRepository).CreateMember(ctx, &member)
 	if err != nil {
 		return err
 	}
-	service.publisher.Channel <- rtm.Action{Type: "member.create", Data: teamEntity}
+	service.publisher.Channel <- rtm.Action{Type: "member.create", Data: member}
 	return nil
 }
 

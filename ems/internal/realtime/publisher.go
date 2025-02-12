@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Placeblock/nostalgicraft-ems/pkg/realtime"
 	zmq "github.com/pebbe/zmq4"
 )
 
 type Publisher struct {
-	Channel chan interface{}
+	Channel chan realtime.Action
 	socket  *zmq.Socket
 }
 
 func NewPublisher(context *zmq.Context) *Publisher {
-	channel := make(chan interface{}, 1)
+	channel := make(chan realtime.Action, 1)
 	socket, err := context.NewSocket(zmq.PUB)
 	if err != nil {
 		log.Fatal("Could not create ZMQ Socket: ", err)

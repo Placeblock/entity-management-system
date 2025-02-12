@@ -6,7 +6,7 @@ type HTTPError struct {
 	Title  string `json:"title"`
 	Detail string `json:"detail"`
 	Status int    `json:"status"`
-	Cause  error  `json:"cause"`
+	Cause  error  `json:"-"`
 }
 
 func (e *HTTPError) Error() string {
