@@ -7,6 +7,7 @@ import (
 	"os/signal"
 
 	"github.com/Placeblock/nostalgicraft-discord/internal/commands"
+	"github.com/Placeblock/nostalgicraft-discord/internal/realtime"
 	"github.com/Placeblock/nostalgicraft-discord/pkg/config"
 	"github.com/bwmarrin/discordgo"
 	"gopkg.in/yaml.v3"
@@ -26,6 +27,7 @@ func main() {
 		log.Panicln("Failed to parse config.yml", err)
 	}
 
+	go realtime.Listen()
 	startDiscordBot(cfg)
 }
 
