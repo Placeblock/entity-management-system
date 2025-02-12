@@ -5,8 +5,8 @@ import "fmt"
 type HTTPError struct {
 	Title  string `json:"title"`
 	Detail string `json:"detail"`
-	Status int    `json:"-"`
-	Cause  error  `json:"-"`
+	Status int    `json:"status"`
+	Cause  error  `json:"cause"`
 }
 
 func (e *HTTPError) Error() string {
