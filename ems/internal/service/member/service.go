@@ -70,6 +70,15 @@ func (service *MemberService) GetMemberByEntityId(ctx context.Context, entityId 
 	return &member, nil
 }
 
+func (service *MemberService) GetEntityIdByMemberId(ctx context.Context, memberId uint) (*uint, error) {
+	member := models.Member{ID: memberId}
+	err := (*service.memberRepository).GetMember(ctx, &member)
+	if err != nil {
+		return nil, err
+	}
+	return &member.EntityID, nil
+}
+
 func (service *MemberService) CreateInvite(ctx context.Context, invitedId uint, inviterId uint) (*models.MemberInvite, error) {
 	memberInvite := models.MemberInvite{InvitedID: invitedId, InviterID: inviterId}
 	err := (*service.memberRepository).CreateMemberInvite(ctx, &memberInvite)

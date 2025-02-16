@@ -38,11 +38,12 @@ func createInvite(ctx *gin.Context, memberService *member.MemberService) {
 		ctx.Error(&rest.HTTPError{Title: "Invalid Invite Parameters", Detail: "No or invalid parameters where provided to create the Invite", Status: http.StatusBadRequest, Cause: err})
 		return
 	}
-	if params.InvitedID == params.InviterID {
+	context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	inviterEntityId, err := memberService.GetEntityIdByMemberId(context, params.InviterID)
+	if params.InvitedID == *inviterEntityId {
 		ctx.Error(&rest.HTTPError{Title: "Invalid Invite Parameters", Detail: "The inviter and the invited cannot be the same entity", Status: http.StatusBadRequest, Cause: err})
 		return
 	}
-	context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	invite, err := memberService.CreateInvite(context, params.InvitedID, params.InviterID)
 	cancel()
 	if err != nil {
