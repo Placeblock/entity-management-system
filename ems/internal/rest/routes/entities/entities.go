@@ -41,6 +41,9 @@ func Handle(g *gin.RouterGroup, entityService *entity.EntityService,
 	g.GET(":id/invites", func(ctx *gin.Context) {
 		getInvitesByInvited(ctx, memberService)
 	})
+	g.GET(":id/invites/:inviter", func(ctx *gin.Context) {
+		getInviteByInviter(ctx, memberService)
+	})
 }
 
 func getEntity(ctx *gin.Context, entityService *entity.EntityService) {
@@ -176,4 +179,20 @@ func getInvitesByInvited(ctx *gin.Context, memberService *member.MemberService) 
 		return
 	}
 	ctx.JSON(http.StatusOK, rest.Response{Data: invites})
+}
+
+func getInviteByInviter(ctx *gin.Context, memberService *member.MemberService) {
+	serializedId := ctx.Param("id")
+	id, err := strconv.ParseUint(serializedId, 10, 0)
+	if err != nil {
+		ctx.Error(&rest.HTTPError{Title: "Invalid ID", Detail: "No or an invalid Entity ID was provided", Status: http.StatusBadRequest, Cause: err})
+		return
+	}
+	inviter := ctx.Param("inviter")
+	invite, err := memberService.GetMemberInviteByInviterName(ctx, uint(id), inviter)
+	if err != nil {
+		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while requesting invites", Status: http.StatusInternalServerError, Cause: err})
+		return
+	}
+	ctx.JSON(http.StatusOK, rest.Response{Data: invite})
 }

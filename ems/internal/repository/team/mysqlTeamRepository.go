@@ -32,8 +32,8 @@ func (repo *MysqlTeamRepository) GetTeam(ctx context.Context, team *models.Team)
 func (repo *MysqlTeamRepository) GetTeamByEntityID(ctx context.Context, entityId uint) (*models.Team, error) {
 	var team models.Team
 	if err := repo.db.WithContext(ctx).Model(&models.Team{}).
-		Joins("INNER JOIN members ON teams.id = members.team_id").
-		Joins("INNER JOIN entities ON members.entity_id = entities.id", repo.db.Where(&models.Entity{ID: entityId})).
+		Joins("LEFT JOIN members ON teams.id = members.team_id").
+		Where("members.entity_id = ?", entityId).
 		First(&team).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -68,4 +68,18 @@ func (repo *MysqlTeamRepository) UpdateTeam(ctx context.Context, team models.Tea
 		return fmt.Errorf("updateTeam %d: %v", team.ID, err)
 	}
 	return nil
+}
+
+func (repo *MysqlTeamRepository) CreateMessage(ctx context.Context, message *models.TeamMessage) error {
+	return repo.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Create(message).Error; err != nil {
+			return fmt.Errorf("createMessage1 %+v: %v", message, err)
+		}
+		member := models.Member{ID: message.MemberID}
+		if err := tx.WithContext(ctx).Preload("Entity").First(&member).Error; err != nil {
+			return fmt.Errorf("createMessage2 %+v: %v", message, err)
+		}
+		message.Member = member
+		return nil
+	})
 }

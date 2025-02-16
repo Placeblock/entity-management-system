@@ -13,4 +13,6 @@ type TeamRepository interface {
 	CreateTeam(ctx context.Context, team *models.Team, member *models.Member) error
 	DeleteTeam(ctx context.Context, team *models.Team) error
 	UpdateTeam(ctx context.Context, team models.Team) error
+
+	CreateMessage(ctx context.Context, message *models.TeamMessage) error
 }

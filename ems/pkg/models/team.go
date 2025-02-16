@@ -6,5 +6,5 @@ type Team struct {
 	ID      uint     `json:"id"`
 	Name    string   `json:"name" gorm:"unique"`
 	Hue     *Hue     `json:"hue"`
-	Members []Member `json:"-"`
+	Members []Member `json:"members,omitempty"`
 }

@@ -14,7 +14,8 @@ type MemberRepository interface {
 
 	GetMemberInvites(ctx context.Context, filter models.MemberInvite) (*[]models.MemberInvite, error)
 	GetMemberInvite(ctx context.Context, invite *models.MemberInvite) error
+	GetMemberInviteByInviterName(ctx context.Context, invite *models.MemberInvite, invitedId uint, inviterName string) error
 	CreateMemberInvite(ctx context.Context, memberInvite *models.MemberInvite) error
-	DeclineMemberInvite(ctx context.Context, memberInvite models.MemberInvite) error
-	AcceptMemberInvite(ctx context.Context, memberInvite models.MemberInvite) (*models.Member, error)
+	DeclineMemberInvite(ctx context.Context, memberInvite *models.MemberInvite) error
+	AcceptMemberInvite(ctx context.Context, memberInvite *models.MemberInvite) (*models.Member, error)
 }

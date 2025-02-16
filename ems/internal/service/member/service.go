@@ -76,22 +76,29 @@ func (service *MemberService) CreateInvite(ctx context.Context, invitedId uint, 
 	if err != nil {
 		return nil, err
 	}
+	service.publisher.Channel <- rtm.Action{Type: "member.invite", Data: memberInvite}
 	return &memberInvite, nil
 }
 
 func (service *MemberService) AcceptInvite(ctx context.Context, inviteId uint) (*models.Member, error) {
 	memberInvite := models.MemberInvite{ID: inviteId}
-	member, err := (*service.memberRepository).AcceptMemberInvite(ctx, memberInvite)
+	member, err := (*service.memberRepository).AcceptMemberInvite(ctx, &memberInvite)
 	if err != nil {
 		return nil, err
 	}
+	service.publisher.Channel <- rtm.Action{Type: "member.invite.accept", Data: memberInvite}
 	service.publisher.Channel <- rtm.Action{Type: "member.create", Data: member}
 	return member, nil
 }
 
 func (service *MemberService) DeclineInvite(ctx context.Context, inviteId uint) error {
 	memberInvite := models.MemberInvite{ID: inviteId}
-	return (*service.memberRepository).DeclineMemberInvite(ctx, memberInvite)
+	err := (*service.memberRepository).DeclineMemberInvite(ctx, &memberInvite)
+	if err != nil {
+		return err
+	}
+	service.publisher.Channel <- rtm.Action{Type: "member.invite.decline", Data: memberInvite}
+	return nil
 }
 
 func (service *MemberService) GetMemberInvitesByInvitedId(ctx context.Context, invitedId uint) (*[]models.MemberInvite, error) {
@@ -103,6 +110,18 @@ func (service *MemberService) GetMemberInvite(ctx context.Context, inviteId uint
 	err := (*service.memberRepository).GetMemberInvite(ctx, &invite)
 	if err != nil {
 		return nil, err
+	}
+	return &invite, nil
+}
+
+func (service *MemberService) GetMemberInviteByInviterName(ctx context.Context, invitedId uint, inviterName string) (*models.MemberInvite, error) {
+	var invite models.MemberInvite
+	err := (*service.memberRepository).GetMemberInviteByInviterName(ctx, &invite, invitedId, inviterName)
+	if err != nil {
+		return nil, err
+	}
+	if invite.ID == 0 {
+		return nil, nil
 	}
 	return &invite, nil
 }

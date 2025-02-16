@@ -70,3 +70,13 @@ func (service *TeamService) RecolorTeam(ctx context.Context, id uint, newHue mod
 	service.publisher.Channel <- rtm.Action{Type: "team.recolor", Data: team}
 	return nil
 }
+
+func (service *TeamService) CreateMessage(ctx context.Context, teamId uint, memberId uint, message string) error {
+	teamMessage := models.TeamMessage{TeamID: teamId, MemberID: memberId, Message: message}
+	err := (*service.teamRepository).CreateMessage(ctx, &teamMessage)
+	if err != nil {
+		return err
+	}
+	service.publisher.Channel <- rtm.Action{Type: "team.message", Data: teamMessage}
+	return nil
+}
