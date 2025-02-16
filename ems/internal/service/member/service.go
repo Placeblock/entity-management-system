@@ -64,12 +64,14 @@ func (service *MemberService) GetMemberByEntityId(ctx context.Context, entityId 
 	if err != nil {
 		return nil, err
 	}
+	if member.ID == 0 {
+		return nil, nil
+	}
 	return &member, nil
 }
 
-func (service *MemberService) CreateInvite(ctx context.Context, invitedId uint, inviterId uint, teamId uint) (*models.MemberInvite, error) {
-
-	memberInvite := models.MemberInvite{InvitedID: invitedId, InviterID: inviterId, TeamID: teamId}
+func (service *MemberService) CreateInvite(ctx context.Context, invitedId uint, inviterId uint) (*models.MemberInvite, error) {
+	memberInvite := models.MemberInvite{InvitedID: invitedId, InviterID: inviterId}
 	err := (*service.memberRepository).CreateMemberInvite(ctx, &memberInvite)
 	if err != nil {
 		return nil, err
@@ -94,10 +96,6 @@ func (service *MemberService) DeclineInvite(ctx context.Context, inviteId uint) 
 
 func (service *MemberService) GetMemberInvitesByInvitedId(ctx context.Context, invitedId uint) (*[]models.MemberInvite, error) {
 	return (*service.memberRepository).GetMemberInvites(ctx, models.MemberInvite{InvitedID: invitedId})
-}
-
-func (service *MemberService) GetMemberInvitesByTeamId(ctx context.Context, teamId uint) (*[]models.MemberInvite, error) {
-	return (*service.memberRepository).GetMemberInvites(ctx, models.MemberInvite{TeamID: teamId})
 }
 
 func (service *MemberService) GetMemberInvite(ctx context.Context, inviteId uint) (*models.MemberInvite, error) {

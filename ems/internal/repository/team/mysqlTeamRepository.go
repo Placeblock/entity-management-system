@@ -2,6 +2,7 @@ package team
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Placeblock/nostalgicraft-ems/pkg/models"
@@ -28,13 +29,27 @@ func (repo *MysqlTeamRepository) GetTeam(ctx context.Context, team *models.Team)
 	return repo.db.WithContext(ctx).First(&team, &team.ID).Error
 }
 
+func (repo *MysqlTeamRepository) GetTeamByEntityID(ctx context.Context, entityId uint) (*models.Team, error) {
+	var team models.Team
+	if err := repo.db.WithContext(ctx).Model(&models.Team{}).
+		Joins("INNER JOIN members ON teams.id = members.team_id").
+		Joins("INNER JOIN entities ON members.entity_id = entities.id", repo.db.Where(&models.Entity{ID: entityId})).
+		First(&team).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &team, nil
+}
+
 func (repo *MysqlTeamRepository) CreateTeam(ctx context.Context, team *models.Team, member *models.Member) error {
 	return repo.db.Transaction(func(tx *gorm.DB) error {
-		if err := repo.db.WithContext(ctx).Create(team).Error; err != nil {
+		if err := tx.WithContext(ctx).Create(team).Error; err != nil {
 			return fmt.Errorf("createTeam1 %+v: %v", team, err)
 		}
 		member.TeamID = team.ID
-		if err := repo.db.WithContext(ctx).Create(member).Error; err != nil {
+		if err := tx.WithContext(ctx).Create(member).Error; err != nil {
 			return fmt.Errorf("createTeam2 %+v: %v", team, err)
 		}
 		return nil

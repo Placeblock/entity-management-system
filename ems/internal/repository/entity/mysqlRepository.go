@@ -2,6 +2,7 @@ package entity
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Placeblock/nostalgicraft-ems/pkg/models"
@@ -18,6 +19,9 @@ func NewMysqlEntityRepository(db *gorm.DB) *MysqlEntityRepository {
 
 func (repo *MysqlEntityRepository) GetEntity(ctx context.Context, entity *models.Entity) error {
 	if err := repo.db.WithContext(ctx).First(entity).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
 		return fmt.Errorf("getEntity %+v: %v", entity, err.Error())
 	}
 	return nil

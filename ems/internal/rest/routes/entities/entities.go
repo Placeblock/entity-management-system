@@ -8,12 +8,15 @@ import (
 
 	"github.com/Placeblock/nostalgicraft-ems/internal/service/entity"
 	"github.com/Placeblock/nostalgicraft-ems/internal/service/member"
+	"github.com/Placeblock/nostalgicraft-ems/internal/service/team"
 	"github.com/Placeblock/nostalgicraft-ems/pkg/models"
 	"github.com/Placeblock/nostalgicraft-ems/pkg/rest"
 	"github.com/gin-gonic/gin"
 )
 
-func Handle(g *gin.RouterGroup, entityService *entity.EntityService, memberService *member.MemberService) {
+func Handle(g *gin.RouterGroup, entityService *entity.EntityService,
+	memberService *member.MemberService,
+	teamService *team.TeamService) {
 	g.POST("", func(ctx *gin.Context) {
 		createEntity(ctx, entityService)
 	})
@@ -28,6 +31,9 @@ func Handle(g *gin.RouterGroup, entityService *entity.EntityService, memberServi
 	})
 	g.PUT(":id", func(ctx *gin.Context) {
 		renameEntity(ctx, entityService)
+	})
+	g.GET(":id/team", func(ctx *gin.Context) {
+		getTeam(ctx, teamService)
 	})
 	g.DELETE(":id/team", func(ctx *gin.Context) {
 		leaveTeam(ctx, memberService)
@@ -67,6 +73,21 @@ func getMember(ctx *gin.Context, memberService *member.MemberService) {
 	ctx.JSON(http.StatusOK, rest.Response{Data: member})
 }
 
+func getTeam(ctx *gin.Context, teamService *team.TeamService) {
+	serializedId := ctx.Param("id")
+	id, err := strconv.ParseUint(serializedId, 10, 0)
+	if err != nil {
+		ctx.Error(&rest.HTTPError{Title: "Invalid ID", Detail: "No or an invalid Entity ID was provided", Status: http.StatusBadRequest, Cause: err})
+		return
+	}
+	team, err := teamService.GetTeamByEntityID(ctx.Request.Context(), uint(id))
+	if err != nil {
+		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while requesting the Team", Status: http.StatusInternalServerError, Cause: err})
+		return
+	}
+	ctx.JSON(http.StatusOK, rest.Response{Data: team})
+}
+
 func getEntities(ctx *gin.Context, entityService *entity.EntityService) {
 	entities, err := entityService.GetEntities(ctx.Request.Context())
 	if err != nil {
@@ -99,7 +120,7 @@ func createEntity(ctx *gin.Context, entityService *entity.EntityService) {
 }
 
 type updateEntityParams struct {
-	NewName string `json:"new_name" binding:"required"`
+	NewName string `json:"name" binding:"required"`
 }
 
 func renameEntity(ctx *gin.Context, entityService *entity.EntityService) {

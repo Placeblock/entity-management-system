@@ -14,6 +14,4 @@ type MemberInvite struct {
 	Invited   Entity `json:"-" gorm:"constraint:OnDelete:CASCADE;"`
 	InviterID uint   `json:"inviter_id"`
 	Inviter   Entity `json:"-" gorm:"constraint:OnDelete:CASCADE;"`
-	TeamID    uint   `json:"team_id" gorm:"primaryKey;autoIncrement:false"`
-	Team      Team   `json:"-" gorm:"constraint:OnDelete:CASCADE;"`
 }

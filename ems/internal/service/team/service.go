@@ -31,6 +31,10 @@ func (service *TeamService) GetTeam(ctx context.Context, teamId uint) (*models.T
 	return &team, nil
 }
 
+func (service *TeamService) GetTeamByEntityID(ctx context.Context, entityId uint) (*models.Team, error) {
+	return (*service.teamRepository).GetTeamByEntityID(ctx, entityId)
+}
+
 func (service *TeamService) CreateTeam(ctx context.Context, team *models.Team, entityId uint) (*models.Member, error) {
 	member := models.Member{EntityID: entityId}
 	err := (*service.teamRepository).CreateTeam(ctx, team, &member)
@@ -42,12 +46,10 @@ func (service *TeamService) CreateTeam(ctx context.Context, team *models.Team, e
 }
 
 func (service *TeamService) RenameTeam(ctx context.Context, id uint, newName string) error {
-	team := models.Team{ID: id, Name: newName}
+	team := models.Team{ID: id}
+	(*service.teamRepository).GetTeam(ctx, &team)
+	team.Name = newName
 	err := (*service.teamRepository).UpdateTeam(ctx, team)
-	if err != nil {
-		return err
-	}
-	err = (*service.teamRepository).GetTeam(ctx, &team)
 	if err != nil {
 		return err
 	}

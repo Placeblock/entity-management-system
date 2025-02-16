@@ -32,13 +32,6 @@ func Handle(g *gin.RouterGroup, teamService *team.TeamService, memberService *me
 	g.GET(":id/members", func(ctx *gin.Context) {
 		getMembers(ctx, memberService)
 	})
-
-	g.GET(":id/invites", func(ctx *gin.Context) {
-		getInvites(ctx, memberService)
-	})
-	g.POST(":id/invites", func(ctx *gin.Context) {
-		inviteEntity(ctx, memberService)
-	})
 }
 
 type createParams struct {
@@ -147,34 +140,6 @@ func getTeam(ctx *gin.Context, teamService *team.TeamService) {
 	ctx.JSON(http.StatusOK, rest.Response{Data: team})
 }
 
-type inviteParams struct {
-	InvitedID uint `json:"invited_id" binding:"required"`
-	InviterID uint `json:"inviter_id" binding:"required"`
-}
-
-func inviteEntity(ctx *gin.Context, memberService *member.MemberService) {
-	serializedId := ctx.Param("id")
-	id, err := strconv.ParseUint(serializedId, 10, 0)
-	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Invalid ID", Detail: "An invalid Team ID was provided", Status: http.StatusBadRequest, Cause: err})
-		return
-	}
-	var params inviteParams
-	err = ctx.ShouldBindJSON(&params)
-	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Invalid Parameters", Detail: "No or invalid parameters where provided to change invite an entity", Status: http.StatusBadRequest, Cause: err})
-		return
-	}
-	context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	invite, err := memberService.CreateInvite(context, params.InvitedID, params.InviterID, uint(id))
-	cancel()
-	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while creating the invite", Status: http.StatusInternalServerError, Cause: err})
-		return
-	}
-	ctx.JSON(http.StatusOK, rest.Response{Data: invite})
-}
-
 func getMembers(ctx *gin.Context, memberService *member.MemberService) {
 	serializedId := ctx.Param("id")
 	id, err := strconv.ParseUint(serializedId, 10, 0)
@@ -188,19 +153,4 @@ func getMembers(ctx *gin.Context, memberService *member.MemberService) {
 		return
 	}
 	ctx.JSON(http.StatusOK, rest.Response{Data: members})
-}
-
-func getInvites(ctx *gin.Context, memberService *member.MemberService) {
-	serializedId := ctx.Param("id")
-	id, err := strconv.ParseUint(serializedId, 10, 0)
-	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Invalid ID", Detail: "An invalid Team ID was provided", Status: http.StatusBadRequest, Cause: err})
-		return
-	}
-	invites, err := memberService.GetMemberInvitesByTeamId(ctx.Request.Context(), uint(id))
-	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occured while requesting the Team Invites", Status: http.StatusInternalServerError, Cause: err})
-		return
-	}
-	ctx.JSON(http.StatusOK, rest.Response{Data: invites})
 }

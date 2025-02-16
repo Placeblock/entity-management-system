@@ -44,5 +44,8 @@ func (service *EntityService) GetEntity(ctx context.Context, id uint) (*models.E
 	if err != nil {
 		return nil, err
 	}
+	if entity.Name == "" {
+		return nil, nil
+	}
 	return &entity, nil
 }

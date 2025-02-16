@@ -34,7 +34,7 @@ func (server *HttpServer) Serve() {
 	r.Use(middleware.ErrorHandler())
 
 	entitiesGroup := r.Group("entities")
-	entities.Handle(entitiesGroup, &server.entityService, &server.memberService)
+	entities.Handle(entitiesGroup, &server.entityService, &server.memberService, &server.teamService)
 	tokenGroup := r.Group("tokens")
 	tokens.Handle(tokenGroup, &server.tokenService)
 	teamsGroup := r.Group("teams")

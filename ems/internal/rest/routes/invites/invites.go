@@ -29,7 +29,6 @@ func Handle(g *gin.RouterGroup, memberService *member.MemberService) {
 type createInviteParams struct {
 	InvitedID uint `json:"invited_id" binding:"required"`
 	InviterID uint `json:"inviter_id" binding:"required"`
-	TeamID    uint `json:"team_id" binding:"required"`
 }
 
 func createInvite(ctx *gin.Context, memberService *member.MemberService) {
@@ -44,7 +43,7 @@ func createInvite(ctx *gin.Context, memberService *member.MemberService) {
 		return
 	}
 	context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	invite, err := memberService.CreateInvite(context, params.InvitedID, params.InviterID, params.TeamID)
+	invite, err := memberService.CreateInvite(context, params.InvitedID, params.InviterID)
 	cancel()
 	if err != nil {
 		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while creating the Invite", Status: http.StatusInternalServerError, Cause: err})
