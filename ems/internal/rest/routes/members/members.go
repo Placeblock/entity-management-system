@@ -22,6 +22,9 @@ func Handle(g *gin.RouterGroup, memberService *member.MemberService) {
 	g.DELETE(":id", func(ctx *gin.Context) {
 		deleteMember(ctx, memberService)
 	})
+	g.POST(":id/message", func(ctx *gin.Context) {
+		sendMessage(ctx, memberService)
+	})
 }
 
 func getMembers(ctx *gin.Context, memberService *member.MemberService) {
@@ -60,6 +63,33 @@ func deleteMember(ctx *gin.Context, memberService *member.MemberService) {
 	cancel()
 	if err != nil {
 		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occured while deleting the Team Member", Status: http.StatusInternalServerError, Cause: err})
+		return
+	}
+	ctx.JSON(http.StatusOK, rest.Response{Data: nil})
+}
+
+type messageParams struct {
+	Message string `json:"message" binding:"required"`
+}
+
+func sendMessage(ctx *gin.Context, memberService *member.MemberService) {
+	serializedId := ctx.Param("id")
+	id, err := strconv.ParseUint(serializedId, 10, 0)
+	if err != nil {
+		ctx.Error(&rest.HTTPError{Title: "Invalid ID", Detail: "An invalid Team ID was provided", Status: http.StatusBadRequest, Cause: err})
+		return
+	}
+	var params messageParams
+	err = ctx.ShouldBindJSON(&params)
+	if err != nil {
+		ctx.Error(&rest.HTTPError{Title: "Invalid Parameters", Detail: "No or invalid parameters where provided to send Message", Status: http.StatusBadRequest, Cause: err})
+		return
+	}
+	context, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	err = memberService.CreateMessage(context, uint(id), params.Message)
+	cancel()
+	if err != nil {
+		ctx.Error(&rest.HTTPError{Title: "Unexpected Error", Detail: "An unexpected Error occurde while sending the Message", Status: http.StatusInternalServerError, Cause: err})
 		return
 	}
 	ctx.JSON(http.StatusOK, rest.Response{Data: nil})

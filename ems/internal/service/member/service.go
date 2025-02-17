@@ -134,3 +134,13 @@ func (service *MemberService) GetMemberInviteByInviterName(ctx context.Context, 
 	}
 	return &invite, nil
 }
+
+func (service *MemberService) CreateMessage(ctx context.Context, memberId uint, message string) error {
+	teamMessage := models.TeamMessage{MemberID: memberId, Message: message}
+	err := (*service.memberRepository).CreateMessage(ctx, &teamMessage)
+	if err != nil {
+		return err
+	}
+	service.publisher.Channel <- rtm.Action{Type: "team.message", Data: teamMessage}
+	return nil
+}

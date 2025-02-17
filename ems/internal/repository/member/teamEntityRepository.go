@@ -18,4 +18,6 @@ type MemberRepository interface {
 	CreateMemberInvite(ctx context.Context, memberInvite *models.MemberInvite) error
 	DeclineMemberInvite(ctx context.Context, memberInvite *models.MemberInvite) error
 	AcceptMemberInvite(ctx context.Context, memberInvite *models.MemberInvite) (*models.Member, error)
+
+	CreateMessage(ctx context.Context, message *models.TeamMessage) error
 }

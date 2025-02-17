@@ -149,3 +149,17 @@ func (repo *MysqlMemberRepository) AcceptMemberInvite(ctx context.Context, invit
 	}
 	return &member, nil
 }
+
+func (repo *MysqlMemberRepository) CreateMessage(ctx context.Context, message *models.TeamMessage) error {
+	return repo.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Create(message).Error; err != nil {
+			return fmt.Errorf("createMessage1 %+v: %v", message, err)
+		}
+		member := models.Member{ID: message.MemberID}
+		if err := tx.WithContext(ctx).Preload("Entity").First(&member).Error; err != nil {
+			return fmt.Errorf("createMessage2 %+v: %v", message, err)
+		}
+		message.Member = member
+		return nil
+	})
+}
