@@ -1,6 +1,10 @@
 package repository
 
-import "context"
+import (
+	"context"
+
+	"github.com/Placeblock/nostalgicraft-discord/pkg/models"
+)
 
 type EntityUserRepository interface {
 	GetEntityIdByUserId(ctx context.Context, userId string) (uint, error)
