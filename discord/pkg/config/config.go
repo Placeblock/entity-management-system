@@ -1,6 +1,6 @@
 package config
 
 type Config struct {
-	Token     string `yaml:"token"`
-	TestGuild string `yaml:"test-guild"`
+	Token string `yaml:"token"`
+	Guild string `yaml:"guild"`
 }

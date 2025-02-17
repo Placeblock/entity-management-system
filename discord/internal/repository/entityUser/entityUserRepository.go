@@ -1,4 +1,4 @@
-package repository
+package entityuser
 
 import (
 	"context"

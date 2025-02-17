@@ -12,14 +12,6 @@ func (e ErrNotFound) Error() string {
 	return "Not found"
 }
 
-type ErrInvalidUserID struct {
-	UserID string
-}
-
-func (e ErrInvalidUserID) Error() string {
-	return fmt.Sprintf("Invalid UserID %s", e.UserID)
-}
-
 type ErrEntityNotLinked struct {
 	EntityID uint
 }

@@ -1,4 +1,4 @@
-package repository
+package entityuser
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func (repo *MysqlEntityUserRepository) GetEntityIdByUserId(ctx context.Context, 
 	userEntity := models.UserEntity{UserID: userId}
 	if err := repo.db.WithContext(ctx).First(&userEntity).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, &cerr.ErrInvalidUserID{UserID: userId}
+			return 0, &cerr.ErrNotFound{}
 		}
 		return 0, err
 	}
