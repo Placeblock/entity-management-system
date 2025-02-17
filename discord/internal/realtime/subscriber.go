@@ -26,6 +26,11 @@ type Subscriber struct {
 	discord           *discordgo.Session
 }
 
+func NewSubscriber(cfg *config.Config, entityUserService *service.EntityUserService,
+	teamRoleService *service.TeamRoleService, discord *discordgo.Session) *Subscriber {
+	return &Subscriber{cfg, entityUserService, teamRoleService, discord}
+}
+
 func (s *Subscriber) Listen() {
 	zctx, err := zmq4.NewContext()
 	socket, err := zctx.NewSocket(zmq4.SUB)
@@ -118,23 +123,147 @@ func (s *Subscriber) onEntityRename(entity models.Entity) {
 }
 
 func (s *Subscriber) onMemberCreate(member models.Member) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
+	userId, err := s.entityUserService.GetUserIdByEntityId(ctx, member.EntityID)
+	if err != nil {
+		if errors.Is(err, perr.ErrNotFound{}) {
+			return
+		}
+		fmt.Print(fmt.Errorf("Could not get User ID when creating team member: %v", err.Error()))
+		return
+	}
+
+	roleId, err := s.teamRoleService.GetRoleByTeamId(ctx, member.TeamID)
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not get Role ID when creating team member: %v", err.Error()))
+		return
+	}
+
+	err = s.discord.GuildMemberRoleAdd(s.cfg.Guild, userId, roleId)
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not add User to Role when creating team member: %v", err.Error()))
+	}
 }
 
 func (s *Subscriber) onMemberRemove(member models.Member) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
+	userId, err := s.entityUserService.GetUserIdByEntityId(ctx, member.EntityID)
+	if err != nil {
+		if errors.Is(err, perr.ErrNotFound{}) {
+			return
+		}
+		fmt.Print(fmt.Errorf("Could not get User ID when removing team member: %v", err.Error()))
+		return
+	}
+
+	roleId, err := s.teamRoleService.GetRoleByTeamId(ctx, member.TeamID)
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not get Role ID when removing team member: %v", err.Error()))
+		return
+	}
+
+	err = s.discord.GuildMemberRoleRemove(s.cfg.Guild, userId, roleId)
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not remove User from Role when removing team member: %v", err.Error()))
+	}
 }
 
 func (s *Subscriber) onMemberInvite(invite models.MemberInvite) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
+	invitedUserId, err := s.entityUserService.GetUserIdByEntityId(ctx, invite.InvitedID)
+	if err != nil {
+		if errors.Is(err, perr.ErrNotFound{}) {
+			return
+		}
+		fmt.Print(fmt.Errorf("Could not get Invited User ID when receiving invite: %v", err.Error()))
+		return
+	}
+
+	userChan, err := s.discord.UserChannelCreate(invitedUserId)
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not create Private Channel when receiving invite: %v", err.Error()))
+		return
+	}
+	inviterName := invite.Inviter.Entity.Name
+	components := []discordgo.MessageComponent{
+		discordgo.Button{
+			Label:    "ACCEPT",
+			Style:    discordgo.PrimaryButton,
+			CustomID: "accept-invite",
+		},
+		discordgo.Button{
+			Label:    "DECLINE",
+			Style:    discordgo.DangerButton,
+			CustomID: "decline-invite",
+		},
+	}
+	_, err = s.discord.ChannelMessageSendComplex(userChan.ID, &discordgo.MessageSend{
+		Content: "```ansi\n\u001b[1;35m" + inviterName + " \u001b[0minvited you to his Team```",
+		Components: []discordgo.MessageComponent{
+			discordgo.ActionsRow{
+				Components: components,
+			},
+		},
+	})
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not send Message when receiving invite: %v", err.Error()))
+		return
+	}
 }
 
 func (s *Subscriber) onMemberInviteAccept(invite models.MemberInvite) {
-
+	s.sendMemberInviteProcessMessage(invite, true)
 }
 
 func (s *Subscriber) onMemberInviteDecline(invite models.MemberInvite) {
+	s.sendMemberInviteProcessMessage(invite, false)
+}
 
+func (s *Subscriber) sendMemberInviteProcessMessage(invite models.MemberInvite, accepted bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	invitedName := invite.Invited.Name
+	inviterName := invite.Inviter.Entity.Name
+	var message string
+	if accepted {
+		message = "\u001b[1;32maccepted"
+	} else {
+		message = "\u001b[1;31mdeclined"
+	}
+
+	invitedUserId, err := s.entityUserService.GetUserIdByEntityId(ctx, invite.Invited.ID)
+	if err == nil {
+		userChan, err := s.discord.UserChannelCreate(invitedUserId)
+		if err == nil {
+			_, err = s.discord.ChannelMessageSend(userChan.ID,
+				"```ansi\nYou "+message+" \u001b[1;35m"+inviterName+"'s \u001b[0m Team-Invite.```")
+			if err != nil {
+				fmt.Print(fmt.Errorf("Could not send invited message when processing invite: %v", err.Error()))
+			}
+		} else {
+			fmt.Print(fmt.Errorf("Could not create invited channel when processing invite: %v", err.Error()))
+		}
+	}
+	inviterUserId, err := s.entityUserService.GetUserIdByEntityId(ctx, invite.Inviter.EntityID)
+	if err == nil {
+		userChan, err := s.discord.UserChannelCreate(inviterUserId)
+		if err == nil {
+			_, err = s.discord.ChannelMessageSend(userChan.ID,
+				"```ansi\n\u001b[1;35m"+invitedName+" "+message+" \u001b[0m your Team-Invite.```")
+			if err != nil {
+				fmt.Print(fmt.Errorf("Could not send inviter message when processing invite: %v", err.Error()))
+			}
+		} else {
+			fmt.Print(fmt.Errorf("Could not create inviter channel when processing invite: %v", err.Error()))
+		}
+	}
 }
 
 func (s *Subscriber) onTeamCreate(data emsRealtime.CreateTeamData) {

@@ -115,7 +115,7 @@ func (repo *MysqlMemberRepository) CreateMemberInvite(ctx context.Context, invit
 
 func (repo *MysqlMemberRepository) DeclineMemberInvite(ctx context.Context, invite *models.MemberInvite) error {
 	return repo.db.Transaction(func(tx *gorm.DB) error {
-		if err := repo.db.WithContext(ctx).Preload(clause.Associations).First(invite).Error; err != nil {
+		if err := repo.db.WithContext(ctx).Preload(clause.Associations).Preload("Inviter." + clause.Associations).First(invite).Error; err != nil {
 			return fmt.Errorf("declineMemberInvite2 %+v: %v", invite, err.Error())
 		}
 		if err := repo.db.WithContext(ctx).Where(invite).Delete(invite).Error; err != nil {

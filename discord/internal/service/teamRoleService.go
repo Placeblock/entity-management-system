@@ -11,8 +11,8 @@ type TeamRoleService struct {
 	repo *teamrole.TeamRoleRepository
 }
 
-func NewTeamRoleService(repository *teamrole.TeamRoleRepository) *TeamRoleService {
-	return &TeamRoleService{repo: repository}
+func NewTeamRoleService(repository teamrole.TeamRoleRepository) *TeamRoleService {
+	return &TeamRoleService{repo: &repository}
 }
 
 func (service *TeamRoleService) GetRoleByTeamId(ctx context.Context, teamId uint) (string, error) {

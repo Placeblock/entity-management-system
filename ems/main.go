@@ -13,7 +13,8 @@ import (
 	smember "github.com/Placeblock/nostalgicraft-ems/internal/service/member"
 	steam "github.com/Placeblock/nostalgicraft-ems/internal/service/team"
 	stoken "github.com/Placeblock/nostalgicraft-ems/internal/service/token"
-	"github.com/Placeblock/nostalgicraft-ems/internal/storage"
+	"github.com/Placeblock/nostalgicraft-ems/pkg/models"
+	"github.com/Placeblock/nostalgicraft-ems/pkg/storage"
 	zmq "github.com/pebbe/zmq4"
 )
 
@@ -25,6 +26,7 @@ func main() {
 	publisher := realtime.NewPublisher(zctx)
 	go publisher.Listen()
 	db := storage.Connect()
+	db.AutoMigrate(&models.Entity{}, &models.Token{}, &models.Team{}, &models.Member{}, &models.MemberInvite{}, &models.TeamMessage{})
 	entityRepo := entity.NewMysqlEntityRepository(db)
 	tokenRepo := token.NewMysqlTokenRepository(db)
 	teamRepo := team.NewMysqlTeamRepository(db)

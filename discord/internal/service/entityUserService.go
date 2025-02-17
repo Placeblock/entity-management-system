@@ -11,8 +11,8 @@ type EntityUserService struct {
 	repo *entityuser.EntityUserRepository
 }
 
-func NewEntityUserService(repository *entityuser.EntityUserRepository) *EntityUserService {
-	return &EntityUserService{repo: repository}
+func NewEntityUserService(repository entityuser.EntityUserRepository) *EntityUserService {
+	return &EntityUserService{repo: &repository}
 }
 
 func (service *EntityUserService) GetEntityIdByUserId(ctx context.Context, userId string) (uint, error) {
