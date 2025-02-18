@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/Placeblock/nostalgicraft-discord/internal/service"
@@ -22,13 +23,13 @@ import (
 type Subscriber struct {
 	cfg               *config.Config
 	entityUserService *service.EntityUserService
-	teamRoleService   *service.TeamRoleService
+	teamDataService   *service.TeamDataService
 	discord           *discordgo.Session
 }
 
 func NewSubscriber(cfg *config.Config, entityUserService *service.EntityUserService,
-	teamRoleService *service.TeamRoleService, discord *discordgo.Session) *Subscriber {
-	return &Subscriber{cfg, entityUserService, teamRoleService, discord}
+	teamDataService *service.TeamDataService, discord *discordgo.Session) *Subscriber {
+	return &Subscriber{cfg, entityUserService, teamDataService, discord}
 }
 
 func (s *Subscriber) Listen() {
@@ -99,6 +100,10 @@ func (s *Subscriber) Listen() {
 			var team models.Team
 			err = json.Unmarshal(msg.Data, &team)
 			s.onTeamRecolor(team)
+		case "team.message":
+			var teamMessage models.TeamMessage
+			err = json.Unmarshal(msg.Data, &teamMessage)
+			s.onTeamMessage(teamMessage)
 		}
 	}
 }
@@ -135,13 +140,13 @@ func (s *Subscriber) onMemberCreate(member models.Member) {
 		return
 	}
 
-	roleId, err := s.teamRoleService.GetRoleByTeamId(ctx, member.TeamID)
+	teamData, err := s.teamDataService.GetTeamDataByTeamId(ctx, member.TeamID)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not get Role ID when creating team member: %v", err.Error()))
 		return
 	}
 
-	err = s.discord.GuildMemberRoleAdd(s.cfg.Guild, userId, roleId)
+	err = s.discord.GuildMemberRoleAdd(s.cfg.Guild, userId, teamData.RoleID)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not add User to Role when creating team member: %v", err.Error()))
 	}
@@ -160,13 +165,13 @@ func (s *Subscriber) onMemberRemove(member models.Member) {
 		return
 	}
 
-	roleId, err := s.teamRoleService.GetRoleByTeamId(ctx, member.TeamID)
+	teamData, err := s.teamDataService.GetTeamDataByTeamId(ctx, member.TeamID)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not get Role ID when removing team member: %v", err.Error()))
 		return
 	}
 
-	err = s.discord.GuildMemberRoleRemove(s.cfg.Guild, userId, roleId)
+	err = s.discord.GuildMemberRoleRemove(s.cfg.Guild, userId, teamData.RoleID)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not remove User from Role when removing team member: %v", err.Error()))
 	}
@@ -191,20 +196,21 @@ func (s *Subscriber) onMemberInvite(invite models.MemberInvite) {
 		return
 	}
 	inviterName := invite.Inviter.Entity.Name
+	serializedInviteId := strconv.FormatUint(uint64(invite.ID), 10)
 	components := []discordgo.MessageComponent{
 		discordgo.Button{
 			Label:    "ACCEPT",
 			Style:    discordgo.PrimaryButton,
-			CustomID: "accept-invite",
+			CustomID: "accept-invite-" + serializedInviteId,
 		},
 		discordgo.Button{
 			Label:    "DECLINE",
 			Style:    discordgo.DangerButton,
-			CustomID: "decline-invite",
+			CustomID: "decline-invite-" + serializedInviteId,
 		},
 	}
 	_, err = s.discord.ChannelMessageSendComplex(userChan.ID, &discordgo.MessageSend{
-		Content: "```ansi\n\u001b[1;35m" + inviterName + " \u001b[0minvited you to his Team```",
+		Content: "```ansi\n\u001b[1;35m" + inviterName + " \u001b[0minvited you to their Team```",
 		Components: []discordgo.MessageComponent{
 			discordgo.ActionsRow{
 				Components: components,
@@ -243,7 +249,7 @@ func (s *Subscriber) sendMemberInviteProcessMessage(invite models.MemberInvite, 
 		userChan, err := s.discord.UserChannelCreate(invitedUserId)
 		if err == nil {
 			_, err = s.discord.ChannelMessageSend(userChan.ID,
-				"```ansi\nYou "+message+" \u001b[1;35m"+inviterName+"'s \u001b[0m Team-Invite.```")
+				"```ansi\nYou "+message+" \u001b[1;35m"+inviterName+"'s \u001b[0mTeam-Invite.```")
 			if err != nil {
 				fmt.Print(fmt.Errorf("Could not send invited message when processing invite: %v", err.Error()))
 			}
@@ -256,7 +262,7 @@ func (s *Subscriber) sendMemberInviteProcessMessage(invite models.MemberInvite, 
 		userChan, err := s.discord.UserChannelCreate(inviterUserId)
 		if err == nil {
 			_, err = s.discord.ChannelMessageSend(userChan.ID,
-				"```ansi\n\u001b[1;35m"+invitedName+" "+message+" \u001b[0m your Team-Invite.```")
+				"```ansi\n\u001b[1;35m"+invitedName+" "+message+" \u001b[0myour Team-Invite.```")
 			if err != nil {
 				fmt.Print(fmt.Errorf("Could not send inviter message when processing invite: %v", err.Error()))
 			}
@@ -277,10 +283,31 @@ func (s *Subscriber) onTeamCreate(data emsRealtime.CreateTeamData) {
 	}
 	role, err := s.discord.GuildRoleCreate(s.cfg.Guild, &params)
 	if err != nil {
+		fmt.Print(fmt.Errorf("Could not create Role when creating team: %v", err.Error()))
+		return
+	}
+	channel, err := s.discord.GuildChannelCreateComplex(s.cfg.Guild, discordgo.GuildChannelCreateData{
+		Name:     name,
+		Type:     discordgo.ChannelTypeGuildText,
+		ParentID: s.cfg.TeamsCategoryID,
+		PermissionOverwrites: []*discordgo.PermissionOverwrite{
+			{
+				ID:    role.ID,
+				Type:  discordgo.PermissionOverwriteTypeRole,
+				Allow: discordgo.PermissionViewChannel,
+				Deny:  0,
+			},
+			{
+				ID:   s.cfg.EveryoneRoleID,
+				Deny: discordgo.PermissionViewChannel,
+			},
+		},
+	})
+	if err != nil {
 		fmt.Print(fmt.Errorf("Could not create Guild when creating team: %v", err.Error()))
 		return
 	}
-	err = s.teamRoleService.CreateTeamRole(ctx, data.Team.ID, role.ID)
+	err = s.teamDataService.CreateTeamData(ctx, data.Team.ID, role.ID, channel.ID)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not create TeamRole when creating team: %v", err.Error()))
 		return
@@ -303,12 +330,12 @@ func (s *Subscriber) onTeamRename(team models.Team) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	roleId, err := s.teamRoleService.GetRoleByTeamId(ctx, team.ID)
+	teamData, err := s.teamDataService.GetTeamDataByTeamId(ctx, team.ID)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not get Role ID when renaming team: %v", err.Error()))
 		return
 	}
-	s.discord.GuildRoleEdit(s.cfg.Guild, roleId, &discordgo.RoleParams{
+	s.discord.GuildRoleEdit(s.cfg.Guild, teamData.RoleID, &discordgo.RoleParams{
 		Name: team.Name,
 	})
 }
@@ -317,18 +344,37 @@ func (s *Subscriber) onTeamRecolor(team models.Team) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	roleId, err := s.teamRoleService.GetRoleByTeamId(ctx, team.ID)
+	teamData, err := s.teamDataService.GetTeamDataByTeamId(ctx, team.ID)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not get Role ID when recoloring team: %v", err.Error()))
 		return
 	}
-	s.discord.GuildRoleEdit(s.cfg.Guild, roleId, &discordgo.RoleParams{
+	_, err = s.discord.GuildRoleEdit(s.cfg.Guild, teamData.RoleID, &discordgo.RoleParams{
 		Color: getTeamColor(float64(*team.Hue)),
 	})
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not edit Role when recoloring team: %v", err.Error()))
+	}
+}
+
+func (s *Subscriber) onTeamMessage(teamMessage models.TeamMessage) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	teamData, err := s.teamDataService.GetTeamDataByTeamId(ctx, teamMessage.Member.TeamID)
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not get Team Data when receiving team message: %v", err.Error()))
+		return
+	}
+	senderName := teamMessage.Member.Entity.Name
+	_, err = s.discord.ChannelMessageSend(teamData.ChannelID, "**"+senderName+":**  "+teamMessage.Message)
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not send Team Message when receiving team message: %v", err.Error()))
+	}
 }
 
 func getTeamColor(hue float64) *int {
-	c := colorful.Hcl(hue, 0.5, 0.5)
+	c := colorful.Hsv(hue*360, 0.7, 0.5)
 	r, g, b := c.RGB255()
 	color := (int(r) << 16) + (int(g) << 8) + int(b)
 	return &color

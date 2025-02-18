@@ -2,6 +2,7 @@ package member
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Placeblock/nostalgicraft-ems/internal/realtime"
 	teamentity "github.com/Placeblock/nostalgicraft-ems/internal/repository/member"
@@ -85,6 +86,7 @@ func (service *MemberService) CreateInvite(ctx context.Context, invitedId uint, 
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("%+v\n", memberInvite)
 	service.publisher.Channel <- rtm.Action{Type: "member.invite", Data: memberInvite}
 	return &memberInvite, nil
 }

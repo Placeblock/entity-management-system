@@ -37,8 +37,10 @@ func (reg *CommandRegistry) Register(command Command) {
 }
 
 func (reg *CommandRegistry) handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if cmd, ok := reg.commands[i.ApplicationCommandData().Name]; ok {
-		cmd.Handler(s, i)
+	if i.Type == discordgo.InteractionApplicationCommand {
+		if cmd, ok := reg.commands[i.ApplicationCommandData().Name]; ok {
+			cmd.Handler(s, i)
+		}
 	}
 }
 

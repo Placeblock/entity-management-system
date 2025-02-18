@@ -105,7 +105,7 @@ func (repo *MysqlMemberRepository) CreateMemberInvite(ctx context.Context, invit
 		if err := tx.WithContext(ctx).Create(invite).Error; err != nil {
 			return fmt.Errorf("createMemberInvite1 %+v: %v", invite, err.Error())
 		}
-		if err := tx.WithContext(ctx).Preload(clause.Associations).First(invite).Error; err != nil {
+		if err := tx.WithContext(ctx).Preload(clause.Associations).Preload("Inviter." + clause.Associations).First(invite).Error; err != nil {
 			return fmt.Errorf("createMemberInvite2 %+v: %v", invite, err.Error())
 		}
 		return nil
@@ -128,10 +128,10 @@ func (repo *MysqlMemberRepository) DeclineMemberInvite(ctx context.Context, invi
 func (repo *MysqlMemberRepository) AcceptMemberInvite(ctx context.Context, invite *models.MemberInvite) (*models.Member, error) {
 	var member models.Member
 	err := repo.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Preload(clause.Associations).First(invite).Error; err != nil {
+		if err := tx.WithContext(ctx).Preload(clause.Associations).Preload("Inviter." + clause.Associations).First(invite).Error; err != nil {
 			return fmt.Errorf("acceptMemberInvite1 %+v: %v", invite, err.Error())
 		}
-		inviter := models.Member{EntityID: invite.InviterID}
+		inviter := models.Member{ID: invite.InviterID}
 		if err := tx.WithContext(ctx).First(&inviter).Error; err != nil {
 			return fmt.Errorf("acceptMemberInvite2 %+v: %v", invite, err.Error())
 		}
