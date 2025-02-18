@@ -18,7 +18,7 @@ func NewMysqlEntityRepository(db *gorm.DB) *MysqlEntityRepository {
 }
 
 func (repo *MysqlEntityRepository) GetEntity(ctx context.Context, entity *models.Entity) error {
-	if err := repo.db.WithContext(ctx).First(entity).Error; err != nil {
+	if err := repo.db.WithContext(ctx).Where(entity).First(entity).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil
 		}

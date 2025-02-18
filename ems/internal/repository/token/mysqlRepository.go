@@ -29,7 +29,7 @@ func (repo *MysqlTokenRepository) CreateToken(ctx context.Context, token models.
 }
 
 func (repo *MysqlTokenRepository) GetToken(ctx context.Context, token *models.Token) (*models.Token, error) {
-	if err := repo.db.WithContext(ctx).First(&token).Error; err != nil {
+	if err := repo.db.WithContext(ctx).Where(token).First(token).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}

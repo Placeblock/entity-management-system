@@ -18,9 +18,13 @@ import (
 	"github.com/Placeblock/nostalgicraft-discord/internal/service"
 	"github.com/Placeblock/nostalgicraft-discord/pkg/config"
 	"github.com/Placeblock/nostalgicraft-discord/pkg/models"
+	"github.com/Placeblock/nostalgicraft-discord/pkg/rest"
+	emsmodels "github.com/Placeblock/nostalgicraft-ems/pkg/models"
 	"github.com/Placeblock/nostalgicraft-ems/pkg/storage"
 	"github.com/bwmarrin/discordgo"
 	"gopkg.in/yaml.v3"
+
+	"github.com/carlmjohnson/requests"
 )
 
 func main() {
@@ -53,7 +57,7 @@ func main() {
 }
 
 func listen(cfg config.Config, session *discordgo.Session, entityUserService *service.EntityUserService, teamDataService *service.TeamDataService) {
-	session.Identify.Intents = discordgo.IntentsGuildMessages
+	session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent
 	err := session.Open()
 	if err != nil {
 		log.Panicln("Failed to start Discord Bot", err)
@@ -92,7 +96,6 @@ func listen(cfg config.Config, session *discordgo.Session, entityUserService *se
 	})
 
 	session.AddHandler(func(s *discordgo.Session, i *discordgo.MessageCreate) {
-		fmt.Println("MESSAGE")
 		if i.Author.Bot {
 			return
 		}
@@ -102,7 +105,7 @@ func listen(cfg config.Config, session *discordgo.Session, entityUserService *se
 
 		teamData, err := teamDataService.GetTeamDataByChannelId(ctx, i.ChannelID)
 		if err != nil {
-			fmt.Println("Could not get TeamData when checking Message", err)
+			fmt.Println("Could not get TeamData when receiving Message", err)
 			return
 		}
 		if teamData.TeamID == 0 {
@@ -110,7 +113,35 @@ func listen(cfg config.Config, session *discordgo.Session, entityUserService *se
 		}
 		err = s.ChannelMessageDelete(teamData.ChannelID, i.Message.ID)
 		if err != nil {
-			fmt.Println("Could not delete Message when checking Message", err)
+			fmt.Println("Could not delete Message when receiving Message", err)
+			return
+		}
+
+		entityId, err := entityUserService.GetEntityIdByUserId(ctx, i.Author.ID)
+		if err != nil {
+			fmt.Println("Could not get EntityID when receiving Message", err)
+			return
+		}
+		if entityId == 0 {
+			return
+		}
+
+		var response rest.APIResponse[emsmodels.Member]
+		err = requests.
+			URL("http://"+cfg.Ems.RestHost+":"+cfg.Ems.RestPort).
+			Pathf("/entities/%d/member", entityId).
+			ToJSON(&response).Fetch(ctx)
+		if err != nil {
+			fmt.Println("Could not fetch Member when receiving Message", err)
+			return
+		}
+		err = requests.
+			URL("http://"+cfg.Ems.RestHost+":"+cfg.Ems.RestPort).
+			Pathf("/members/%d/message", response.Data.ID).
+			BodyJSON(rest.CreateMessageDto{Message: i.Message.Content}).
+			Fetch(ctx)
+		if err != nil {
+			fmt.Println("Could not send Message when receiving Message", err)
 			return
 		}
 	})

@@ -3,6 +3,7 @@ package entityuser
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	cerr "github.com/Placeblock/nostalgicraft-discord/pkg/errors"
 	"github.com/Placeblock/nostalgicraft-discord/pkg/models"
@@ -18,13 +19,15 @@ func NewMysqlEntityUserRepository(db *gorm.DB) *MysqlEntityUserRepository {
 }
 
 func (repo *MysqlEntityUserRepository) GetEntityIdByUserId(ctx context.Context, userId string) (uint, error) {
+	fmt.Println(userId)
 	userEntity := models.UserEntity{UserID: userId}
-	if err := repo.db.WithContext(ctx).First(&userEntity).Error; err != nil {
+	if err := repo.db.WithContext(ctx).Where(&userEntity).First(&userEntity).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, &cerr.ErrNotFound{}
 		}
 		return 0, err
 	}
+	fmt.Println(userEntity)
 	return userEntity.EntityID, nil
 }
 
