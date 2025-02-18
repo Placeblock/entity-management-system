@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -13,8 +12,5 @@ func GenSix() string {
 	min := 100000
 	max := 999999
 	c := rand.Intn(max-min+1) + min
-	form := strconv.Itoa(c)
-	s := fmt.Sprintf("%s %s", form[0:3], form[3:6])
-
-	return s
+	return strconv.Itoa(c)
 }

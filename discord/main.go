@@ -11,12 +11,12 @@ import (
 
 	"os/signal"
 
+	"github.com/Placeblock/nostalgicraft-discord/internal"
 	"github.com/Placeblock/nostalgicraft-discord/internal/commands"
 	"github.com/Placeblock/nostalgicraft-discord/internal/realtime"
 	entityuser "github.com/Placeblock/nostalgicraft-discord/internal/repository/entityUser"
 	teamrole "github.com/Placeblock/nostalgicraft-discord/internal/repository/teamRole"
 	"github.com/Placeblock/nostalgicraft-discord/internal/service"
-	"github.com/Placeblock/nostalgicraft-discord/pkg/config"
 	"github.com/Placeblock/nostalgicraft-discord/pkg/models"
 	"github.com/Placeblock/nostalgicraft-discord/pkg/rest"
 	emsmodels "github.com/Placeblock/nostalgicraft-ems/pkg/models"
@@ -34,14 +34,13 @@ func main() {
 	}
 	defer f.Close()
 
-	var cfg config.Config
 	decoder := yaml.NewDecoder(f)
-	err = decoder.Decode(&cfg)
+	err = decoder.Decode(&internal.Config)
 	if err != nil {
 		log.Panicln("Failed to parse config.yml", err)
 	}
 
-	session, err := discordgo.New("Bot " + cfg.Token)
+	session, err := discordgo.New("Bot " + internal.Config.Token)
 	if err != nil {
 		log.Panicln("Failed to create Discord Bot", err)
 	}
@@ -51,21 +50,21 @@ func main() {
 	teamDataRepo := teamrole.NewMysqlTeamDataRepository(db)
 	userEntityService := service.NewEntityUserService(entityUserRepo)
 	teamDataService := service.NewTeamDataService(teamDataRepo)
-	subscriber := realtime.NewSubscriber(&cfg, userEntityService, teamDataService, session)
+	subscriber := realtime.NewSubscriber(userEntityService, teamDataService, session)
 	go subscriber.Listen()
-	listen(cfg, session, userEntityService, teamDataService)
+	listen(session, userEntityService, teamDataService)
 }
 
-func listen(cfg config.Config, session *discordgo.Session, entityUserService *service.EntityUserService, teamDataService *service.TeamDataService) {
+func listen(session *discordgo.Session, entityUserService *service.EntityUserService, teamDataService *service.TeamDataService) {
 	session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent
 	err := session.Open()
 	if err != nil {
 		log.Panicln("Failed to start Discord Bot", err)
 	}
 
-	commandRegistry := commands.NewCommandRegistry(session, cfg.Guild)
+	commandRegistry := commands.NewCommandRegistry(session, internal.Config.Guild)
 	commandRegistry.RegisterDefaultHandler()
-	commandRegistry.Register(commands.NewVerifyCommand())
+	commandRegistry.Register(commands.NewVerifyCommand(entityUserService))
 
 	session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if i.Type == discordgo.InteractionMessageComponent {
@@ -75,7 +74,7 @@ func listen(cfg config.Config, session *discordgo.Session, entityUserService *se
 			customId := i.MessageComponentData().CustomID
 			accepted := strings.Split(customId, "-")[0] == "accept"
 			serializedInviteId := strings.Split(customId, "-")[2]
-			requestURL := fmt.Sprintf("http://%s:%s/invites/%s", cfg.Ems.RestHost, cfg.Ems.RestPort, serializedInviteId)
+			requestURL := fmt.Sprintf("http://%s:%s/invites/%s", internal.Config.Ems.RestHost, internal.Config.Ems.RestPort, serializedInviteId)
 			var method string
 			if accepted {
 				method = http.MethodPost
@@ -111,6 +110,7 @@ func listen(cfg config.Config, session *discordgo.Session, entityUserService *se
 		if teamData.TeamID == 0 {
 			return
 		}
+		fmt.Println(teamData.ChannelID)
 		err = s.ChannelMessageDelete(teamData.ChannelID, i.Message.ID)
 		if err != nil {
 			fmt.Println("Could not delete Message when receiving Message", err)
@@ -128,7 +128,7 @@ func listen(cfg config.Config, session *discordgo.Session, entityUserService *se
 
 		var response rest.APIResponse[emsmodels.Member]
 		err = requests.
-			URL("http://"+cfg.Ems.RestHost+":"+cfg.Ems.RestPort).
+			URL("http://"+internal.Config.Ems.RestHost+":"+internal.Config.Ems.RestPort).
 			Pathf("/entities/%d/member", entityId).
 			ToJSON(&response).Fetch(ctx)
 		if err != nil {
@@ -136,7 +136,7 @@ func listen(cfg config.Config, session *discordgo.Session, entityUserService *se
 			return
 		}
 		err = requests.
-			URL("http://"+cfg.Ems.RestHost+":"+cfg.Ems.RestPort).
+			URL("http://"+internal.Config.Ems.RestHost+":"+internal.Config.Ems.RestPort).
 			Pathf("/members/%d/message", response.Data.ID).
 			BodyJSON(rest.CreateMessageDto{Message: i.Message.Content}).
 			Fetch(ctx)

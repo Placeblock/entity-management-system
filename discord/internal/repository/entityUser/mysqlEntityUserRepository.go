@@ -43,11 +43,5 @@ func (repo *MysqlEntityUserRepository) GetUserIdByEntityId(ctx context.Context, 
 }
 
 func (repo *MysqlEntityUserRepository) CreateUserEntity(ctx context.Context, userEntity models.UserEntity) error {
-	if err := repo.db.WithContext(ctx).First(&userEntity).Error; err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return cerr.ErrUserEntityAlreadyExists{UserEntity: userEntity}
-		}
-		return err
-	}
-	return nil
+	return repo.db.WithContext(ctx).Create(&userEntity).Error
 }

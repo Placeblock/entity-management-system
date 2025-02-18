@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Placeblock/nostalgicraft-discord/internal"
 	"github.com/Placeblock/nostalgicraft-discord/internal/service"
-	"github.com/Placeblock/nostalgicraft-discord/pkg/config"
 	perr "github.com/Placeblock/nostalgicraft-discord/pkg/errors"
 	"github.com/Placeblock/nostalgicraft-discord/pkg/realtime"
 	"github.com/Placeblock/nostalgicraft-ems/pkg/models"
@@ -21,15 +21,14 @@ import (
 )
 
 type Subscriber struct {
-	cfg               *config.Config
 	entityUserService *service.EntityUserService
 	teamDataService   *service.TeamDataService
 	discord           *discordgo.Session
 }
 
-func NewSubscriber(cfg *config.Config, entityUserService *service.EntityUserService,
+func NewSubscriber(entityUserService *service.EntityUserService,
 	teamDataService *service.TeamDataService, discord *discordgo.Session) *Subscriber {
-	return &Subscriber{cfg, entityUserService, teamDataService, discord}
+	return &Subscriber{entityUserService, teamDataService, discord}
 }
 
 func (s *Subscriber) Listen() {
@@ -121,7 +120,7 @@ func (s *Subscriber) onEntityRename(entity models.Entity) {
 		return
 	}
 
-	err = s.discord.GuildMemberNickname(s.cfg.Guild, userId, entity.Name)
+	err = s.discord.GuildMemberNickname(internal.Config.Guild, userId, entity.Name)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not nick user when renaming member: %v", err.Error()))
 	}
@@ -146,7 +145,7 @@ func (s *Subscriber) onMemberCreate(member models.Member) {
 		return
 	}
 
-	err = s.discord.GuildMemberRoleAdd(s.cfg.Guild, userId, teamData.RoleID)
+	err = s.discord.GuildMemberRoleAdd(internal.Config.Guild, userId, teamData.RoleID)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not add User to Role when creating team member: %v", err.Error()))
 	}
@@ -171,7 +170,7 @@ func (s *Subscriber) onMemberRemove(member models.Member) {
 		return
 	}
 
-	err = s.discord.GuildMemberRoleRemove(s.cfg.Guild, userId, teamData.RoleID)
+	err = s.discord.GuildMemberRoleRemove(internal.Config.Guild, userId, teamData.RoleID)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not remove User from Role when removing team member: %v", err.Error()))
 	}
@@ -277,19 +276,21 @@ func (s *Subscriber) onTeamCreate(data emsRealtime.CreateTeamData) {
 	defer cancel()
 
 	name := data.Team.Name
+	hoist := true
 	params := discordgo.RoleParams{
 		Name:  name,
 		Color: getTeamColor(float64(*data.Team.Hue)),
+		Hoist: &hoist,
 	}
-	role, err := s.discord.GuildRoleCreate(s.cfg.Guild, &params)
+	role, err := s.discord.GuildRoleCreate(internal.Config.Guild, &params)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not create Role when creating team: %v", err.Error()))
 		return
 	}
-	channel, err := s.discord.GuildChannelCreateComplex(s.cfg.Guild, discordgo.GuildChannelCreateData{
+	channel, err := s.discord.GuildChannelCreateComplex(internal.Config.Guild, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
-		ParentID: s.cfg.TeamsCategoryID,
+		ParentID: internal.Config.TeamsCategoryID,
 		PermissionOverwrites: []*discordgo.PermissionOverwrite{
 			{
 				ID:    role.ID,
@@ -298,7 +299,7 @@ func (s *Subscriber) onTeamCreate(data emsRealtime.CreateTeamData) {
 				Deny:  0,
 			},
 			{
-				ID:   s.cfg.EveryoneRoleID,
+				ID:   internal.Config.EveryoneRoleID,
 				Deny: discordgo.PermissionViewChannel,
 			},
 		},
@@ -320,7 +321,7 @@ func (s *Subscriber) onTeamCreate(data emsRealtime.CreateTeamData) {
 		fmt.Print(fmt.Errorf("Could not get user id for entity id when creating team: %v", err.Error()))
 		return
 	}
-	err = s.discord.GuildMemberRoleAdd(s.cfg.Guild, userID, role.ID)
+	err = s.discord.GuildMemberRoleAdd(internal.Config.Guild, userID, role.ID)
 	if err != nil {
 		fmt.Print(fmt.Errorf("Could not assign user to role when creating team: %v", err.Error()))
 	}
@@ -335,7 +336,7 @@ func (s *Subscriber) onTeamRename(team models.Team) {
 		fmt.Print(fmt.Errorf("Could not get Role ID when renaming team: %v", err.Error()))
 		return
 	}
-	s.discord.GuildRoleEdit(s.cfg.Guild, teamData.RoleID, &discordgo.RoleParams{
+	s.discord.GuildRoleEdit(internal.Config.Guild, teamData.RoleID, &discordgo.RoleParams{
 		Name: team.Name,
 	})
 }
@@ -349,7 +350,7 @@ func (s *Subscriber) onTeamRecolor(team models.Team) {
 		fmt.Print(fmt.Errorf("Could not get Role ID when recoloring team: %v", err.Error()))
 		return
 	}
-	_, err = s.discord.GuildRoleEdit(s.cfg.Guild, teamData.RoleID, &discordgo.RoleParams{
+	_, err = s.discord.GuildRoleEdit(internal.Config.Guild, teamData.RoleID, &discordgo.RoleParams{
 		Color: getTeamColor(float64(*team.Hue)),
 	})
 	if err != nil {
