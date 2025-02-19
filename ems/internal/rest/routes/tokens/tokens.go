@@ -39,7 +39,7 @@ func createToken(ctx *gin.Context, tokenService *token.TokenService) {
 	var params createTokenParams
 	err := ctx.ShouldBindJSON(&params)
 	if err != nil {
-		ctx.Error(&rest.HTTPError{Title: "Invalid Token Parameters", Detail: "No or invalid parameters where provided to create the token", Status: http.StatusBadRequest})
+		ctx.Error(&rest.HTTPError{Title: "Invalid Token Parameters", Detail: "No or invalid parameters where provided to create the token", Status: http.StatusBadRequest, Cause: err})
 		return
 	}
 	token, err := tokenService.CreateToken(ctx.Request.Context(), params.EntityId)
