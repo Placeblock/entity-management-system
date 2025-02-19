@@ -18,7 +18,7 @@ func NewMysqlTeamDataRepository(db *gorm.DB) *MysqlTeamDataRepository {
 }
 
 func (repo *MysqlTeamDataRepository) GetTeamData(ctx context.Context, teamData *models.TeamData) error {
-	if err := repo.db.WithContext(ctx).First(&teamData).Error; err != nil {
+	if err := repo.db.WithContext(ctx).Where(&teamData).First(&teamData).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &cerr.ErrNotFound{}
 		}
