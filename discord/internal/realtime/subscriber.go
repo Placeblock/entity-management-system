@@ -336,9 +336,20 @@ func (s *Subscriber) onTeamRename(team models.Team) {
 		fmt.Print(fmt.Errorf("Could not get Role ID when renaming team: %v", err.Error()))
 		return
 	}
-	s.discord.GuildRoleEdit(internal.Config.Guild, teamData.RoleID, &discordgo.RoleParams{
+	_, err = s.discord.GuildRoleEdit(internal.Config.Guild, teamData.RoleID, &discordgo.RoleParams{
 		Name: team.Name,
 	})
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not edit Role when renaming team: %v", err.Error()))
+		return
+	}
+	_, err = s.discord.ChannelEdit(teamData.ChannelID, &discordgo.ChannelEdit{
+		Name: team.Name,
+	})
+	if err != nil {
+		fmt.Print(fmt.Errorf("Could not edit Channel when renaming team: %v", err.Error()))
+		return
+	}
 }
 
 func (s *Subscriber) onTeamRecolor(team models.Team) {
